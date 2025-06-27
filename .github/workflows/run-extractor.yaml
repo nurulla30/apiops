@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       CONFIGURATION_YAML_PATH:
-        description: 'Path to an optional extractor configuration file.'     
+        description: 'Choose Wether to extract all Apis or extract apis listed an extraction configuration file'     
         required: true
         type: choice
         options:
@@ -22,7 +22,7 @@ on:
 
 env:
   apiops_release_version: v6.0.1.7
-  # The path for your APIOps artifacts inside the unified repo
+  # The new path for your artifacts
   ARTIFACTS_PATH: api_migration/apimartifacts
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Run extractor
+      - name: 'Run Extractor'
         env:
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
@@ -87,7 +87,7 @@ jobs:
           Write-Information "Execution complete."
         shell: pwsh
 
-      - name: Upload artifacts
+      - name: 'Upload Artifacts'
         uses: actions/upload-artifact@v4
         with:
           name: apim-artifacts
@@ -102,13 +102,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
           
-      - name: Download artifacts
+      - name: 'Download Artifacts'
         uses: actions/download-artifact@v4
         with:
           name: apim-artifacts
           path: ${{ env.ARTIFACTS_PATH }}
 
-      - name: Create artifacts pull request
+      - name: 'Create Pull Request'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

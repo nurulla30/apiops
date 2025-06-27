@@ -10,14 +10,11 @@ on:
         options:
           - dev
           - prod
-      API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH:
-        description: 'The path to the artifacts folder (e.g., apimartifacts).'
-        required: true
-        type: string
-        default: 'apimartifacts'
 
 env:
   apiops_release_version: v6.0.1.7
+  # NEW: Centralize your artifacts path
+  ARTIFACTS_PATH: api_migration/apiops/apimartifacts
   # By default, this will be Information but if you want something different you will need to add a variable in the Settings -> Environment -> Environment variables section
   Logging__LogLevel__Default: ${{ vars.LOG_LEVEL || 'Information' }}
 
@@ -29,17 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # If you need to perform secret substitution in a config file, you can add that step here.
-      # Example:
-      # - name: "Perform namevalue secret substitution in configuration.${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}.yaml"
-      #   uses: cschleiden/replace-tokens@v1.3
-      #   with:
-      #     tokenPrefix: "{#"
-      #     tokenSuffix: "#}"
-      #     files: ${{ format('["**/configuration.{0}.yaml"]', github.event.inputs.API_MANAGEMENT_ENVIRONMENT) }}
-      #   env:
-      #     mySecret: ${{ secrets.SOME_SECRET_FOR_NAMED_VALUE }}
-
       - name: Run publisher
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -48,9 +34,8 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
           API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ github.event.inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
-          # Uncomment the next line if you are using a configuration file for overrides
-          # CONFIGURATION_YAML_PATH: ${{ github.workspace }}/configuration.${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}.yaml
+          # IMPORTANT: updated to point to your subfolder
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"
@@ -68,7 +53,7 @@ jobs:
           elseif ("${{ runner.os }}" -like "*mac*") {
             $releaseFileName = "publisher-osx-x64.zip"
           }
-          
+
           Write-Information "Downloading release..."
           $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
           $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName

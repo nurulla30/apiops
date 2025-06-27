@@ -14,9 +14,9 @@ on:
         description: 'The path to the artifacts folder.'
         required: true
         type: string
-        default: 'api_migration/apimartifacts'
+        default: 'api_migration/apiops/apimartifacts'
       CONFIGURATION_YAML_PATH:
-        description: 'The path to the configuration file (e.g., api_migration/configuration.qa.yaml)'
+        description: 'The path to the configuration file (e.g., api_migration/apiops/configuration.qa.yaml)'
         required: false
         type: string
         default: ''

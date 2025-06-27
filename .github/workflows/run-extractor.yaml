@@ -9,7 +9,7 @@ on:
         type: choice
         options:
         - Extract All APIs
-        - api_migration/apiops/configuration.extractor.yaml
+        - api_migration/configuration.extractor.yaml
       API_SPECIFICATION_FORMAT:
         description: 'API Specification Format'     
         required: true
@@ -23,7 +23,7 @@ on:
 env:
   apiops_release_version: v6.0.1.7
   # The new path for your artifacts
-  ARTIFACTS_PATH: api_migration/apiops/apimartifacts
+  ARTIFACTS_PATH: api_migration/apimartifacts
 
 jobs:
   extract:

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       CONFIGURATION_YAML_PATH:
-        description: 'Choose Wether to extract all Apis or extract apis listed an extraction configuration file'     
+        description: 'Path to an optional extractor configuration file.'     
         required: true
         type: choice
         options:
@@ -22,29 +22,27 @@ on:
 
 env:
   apiops_release_version: v6.0.1.7
-  # The new path for your artifacts
+  # The path for your APIOps artifacts inside the unified repo
   ARTIFACTS_PATH: api_migration/apimartifacts
 
 jobs:
   extract:
     runs-on: ubuntu-latest
     environment: dev 
-    environment: dev 
     steps:
       - uses: actions/checkout@v4
           
-      - name: Run extractor without Config Yaml
-        if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH == 'Extract All APIs' }}
+      - name: 'Login to Azure'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run extractor
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
+          # Pass the config path only if it's not the default "Extract All"
+          CONFIGURATION_YAML_PATH: ${{ github.event.inputs.CONFIGURATION_YAML_PATH == 'Extract All APIs' && '' || format('{0}/{1}', github.workspace, github.event.inputs.CONFIGURATION_YAML_PATH) }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"
@@ -59,10 +57,7 @@ jobs:
             $releaseFileName = "extractor-win-x64.zip"
             $executableFileName = "extractor.exe"
           }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "extractor-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
+          elseif ("${{ runner.os }}" -like "*mac*") {
             $releaseFileName = "extractor-osx-x64.zip"
           }
 
@@ -84,76 +79,18 @@ jobs:
           }
 
           Write-Information "Running extractor..."
-          & "$executableFilePath"              
-          if ($LASTEXITCODE -ne 0) { throw "Running extractor failed."}
-
-          Write-Information "Execution complete."
-        shell: pwsh
-      
-      - name: Run extractor with Config Yaml
-        if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH != 'Extract All APIs' }}
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
-          API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
-          CONFIGURATION_YAML_PATH:  ${{ github.workspace }}/${{ github.event.inputs.CONFIGURATION_YAML_PATH }}
-          CONFIGURATION_YAML_PATH:  ${{ github.workspace }}/${{ github.event.inputs.CONFIGURATION_YAML_PATH }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = "Stop"
-          $VerbosePreference = "Continue"
-          $InformationPreference = "Continue"
-
-          Write-Information "Setting name variables..."
-          $releaseFileName = "extractor-linux-x64.zip"
-          $executableFileName = "extractor"
-
-          if ("${{ runner.os }}" -like "*win*") {
-            $releaseFileName = "extractor-win-x64.zip"
-            $executableFileName = "extractor.exe"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "extractor-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
-            $releaseFileName = "extractor-osx-x64.zip"
-          }
-
-          Write-Information "Downloading release..."
-          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
-          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
-          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
-
-          Write-Information "Extracting release..."
-          $executableFolderPath = Join-Path "${{ runner.temp }}" "extractor"
-          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
-          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
-
-          Write-Information "Setting file permissions..."
-          if ("${{ runner.os }}" -like "*linux*")
-          {
-            & chmod +x "$executableFilePath"
-            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
-          }
-
-          Write-Information "Running extractor..."
+          # The extractor executable reads its configuration from environment variables
+          # set by the azure/login action and the env block of this step.
           & "$executableFilePath"              
           if ($LASTEXITCODE -ne 0) { throw "Running extractor failed."}
 
           Write-Information "Execution complete."
         shell: pwsh
 
-      - name: publish artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-from-portal
-          path: ${{ env.ARTIFACTS_PATH }}
+          name: apim-artifacts
           path: ${{ env.ARTIFACTS_PATH }}
           
   create-pull-request:
@@ -162,26 +99,21 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: write
     steps:
       - uses: actions/checkout@v4
           
-      - name: Download artifacts-from-portal
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: artifacts-from-portal
-          path: ${{ env.ARTIFACTS_PATH }}
+          name: apim-artifacts
           path: ${{ env.ARTIFACTS_PATH }}
 
       - name: Create artifacts pull request
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "updated extract from apim instance"
-          title: "APIOps - extract from dev"
-          commit-message: "updated extract from apim instance"
-          title: "APIOps - extract from dev"
-          body: >
-            This PR is auto-generated by Github actions workflow
-          labels: extract, automated pr
+          commit-message: "APIOps - Extracted new changes from dev"
+          title: "APIOps - Extract from dev environment"
+          body: "This PR is auto-generated by the APIOps extractor workflow."
+          branch: feature/apim-extract-${{ github.run_id }}
           labels: extract, automated pr

@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - dev
-          - prod
+          - qa
       API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH:
         description: 'The path to the artifacts folder.'
         required: true
@@ -67,7 +67,8 @@ jobs:
       - name: 'Run Publisher'
         env:
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
-          CONFIGURATION_YAML_PATH: ${{ inputs.CONFIGURATION_YAML_PATH }}
+          # Pass the config path only if it's provided
+          CONFIGURATION_YAML_PATH: ${{ inputs.CONFIGURATION_YAML_PATH != '' && format('{0}/{1}', github.workspace, inputs.CONFIGURATION_YAML_PATH) || '' }}
           COMMIT_ID: ${{ inputs.COMMIT_ID }}
         run: |
           Set-StrictMode -Version Latest

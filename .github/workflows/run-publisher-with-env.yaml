@@ -14,7 +14,17 @@ on:
         description: 'The path to the artifacts folder.'
         required: true
         type: string
-        default: 'api_migration/apiops/apimartifacts'
+        default: 'api_migration/apimartifacts'
+      CONFIGURATION_YAML_PATH:
+        description: 'The path to the configuration file (optional).'
+        required: false
+        type: string
+        default: ''
+      COMMIT_ID:
+        description: 'The commit ID to use for the deployment (optional).'
+        required: false
+        type: string
+        default: ''
 
 env:
   apiops_release_version: v6.0.1.7
@@ -29,36 +39,35 @@ jobs:
         with:
           fetch-depth: 2
     
-      # Run Spectral
-      - uses: actions/setup-node@v4
+      - name: 'Login to Azure'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Run Spectral Linter'
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
       - run: npm install -g @stoplight/spectral-cli
-      - run: spectral lint "${{ GITHUB.WORKSPACE }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}\apis\*.{json,yml,yaml}" --ruleset https://raw.githubusercontent.com/connectedcircuits/devops-api-linter/main/rules.yaml
+      - run: |
+          spectral lint ${{ github.workspace }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}/apis/**/*.json --ruleset https://raw.githubusercontent.com/Azure/apiops/main/src/validation/rules.yaml
+        continue-on-error: true
 
-      # Add this step for each APIM environment and pass specific set of secrets that you want replaced in the env section below
-      - name: "Perform namevalue secret substitution in configuration.${{ inputs.API_MANAGEMENT_ENVIRONMENT}}.yaml"
-        if: (inputs.API_MANAGEMENT_ENVIRONMENT == 'prod' )
+      - name: "Perform Token Substitution in Config"
+        if: inputs.CONFIGURATION_YAML_PATH != ''
         uses: cschleiden/replace-tokens@v1.3
         with:
           tokenPrefix: "{#"
           tokenSuffix: "#}"
-          files: ${{ format('["**/configuration.{0}.yaml"]', inputs.API_MANAGEMENT_ENVIRONMENT) }}
-        # specify environment specific secrets to be replaced. For example the QA environment could have a different set sercrets to
-        # replace within the configuration.[environment].yaml file
+          files: '["${{ inputs.CONFIGURATION_YAML_PATH }}"]'
         env:
-          testSecretValue: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
+          # Example: a secret named 'myNamedValue' in GitHub secrets will replace '{#myNamedValue#}' in the config file
+          myNamedValue: ${{ secrets.MY_NAMED_VALUE_SECRET }}
 
-      - name: Run publisher without Config Yaml but with Commit ID
-        if: ( inputs.CONFIGURATION_YAML_PATH == '' &&  inputs.COMMIT_ID != '')
+      - name: 'Run Publisher'
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
+          CONFIGURATION_YAML_PATH: ${{ inputs.CONFIGURATION_YAML_PATH }}
           COMMIT_ID: ${{ inputs.COMMIT_ID }}
         run: |
           Set-StrictMode -Version Latest
@@ -74,13 +83,10 @@ jobs:
             $releaseFileName = "publisher-win-x64.zip"
             $executableFileName = "publisher.exe"
           }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "publisher-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
+          elseif ("${{ runner.os }}" -like "*mac*") {
             $releaseFileName = "publisher-osx-x64.zip"
           }
-
+          
           Write-Information "Downloading release..."
           $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
           $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
@@ -99,174 +105,8 @@ jobs:
           }
 
           Write-Information "Running publisher..."
-          & "$executableFilePath"              
-          if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
-
-          Write-Information "Execution complete."
-        shell: pwsh
-
-      - name: Run publisher without Config Yaml or Commit ID
-        if: ( inputs.CONFIGURATION_YAML_PATH == '' &&  inputs.COMMIT_ID == '')
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = "Stop"
-          $VerbosePreference = "Continue"
-          $InformationPreference = "Continue"
-
-          Write-Information "Setting name variables..."
-          $releaseFileName = "publisher-linux-x64.zip"
-          $executableFileName = "publisher"
-
-          if ("${{ runner.os }}" -like "*win*") {
-            $releaseFileName = "publisher-win-x64.zip"
-            $executableFileName = "publisher.exe"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "publisher-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
-            $releaseFileName = "publisher-osx-x64.zip"
-          }
-
-          Write-Information "Downloading release..."
-          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
-          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
-          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
-
-          Write-Information "Extracting release..."
-          $executableFolderPath = Join-Path "${{ runner.temp }}" "publisher"
-          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
-          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
-
-          Write-Information "Setting file permissions..."
-          if ("${{ runner.os }}" -like "*linux*")
-          {
-            & chmod +x "$executableFilePath"
-            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
-          }
-
-          Write-Information "Running publisher..."
-          & "$executableFilePath"              
-          if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
-
-          Write-Information "Execution complete."
-        shell: pwsh
-
-      - name: Run publisher with Config Yaml and Commit id
-        if: ( inputs.CONFIGURATION_YAML_PATH != '' &&  inputs.COMMIT_ID != '')
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
-          CONFIGURATION_YAML_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.CONFIGURATION_YAML_PATH }}
-          COMMIT_ID: ${{ inputs.COMMIT_ID }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = "Stop"
-          $VerbosePreference = "Continue"
-          $InformationPreference = "Continue"
-
-          Write-Information "Setting name variables..."
-          $releaseFileName = "publisher-linux-x64.zip"
-          $executableFileName = "publisher"
-
-          if ("${{ runner.os }}" -like "*win*") {
-            $releaseFileName = "publisher-win-x64.zip"
-            $executableFileName = "publisher.exe"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "publisher-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
-            $releaseFileName = "publisher-osx-x64.zip"
-          }
-
-          Write-Information "Downloading release..."
-          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
-          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
-          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
-
-          Write-Information "Extracting release..."
-          $executableFolderPath = Join-Path "${{ runner.temp }}" "publisher"
-          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
-          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
-
-          Write-Information "Setting file permissions..."
-          if ("${{ runner.os }}" -like "*linux*")
-          {
-            & chmod +x "$executableFilePath"
-            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
-          }
-
-          Write-Information "Running publisher..."
-          & "$executableFilePath"              
-          if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
-
-          Write-Information "Execution complete."
-        shell: pwsh
-
-      - name: Run publisher with Config Yaml but without Commit id
-        if: ( inputs.CONFIGURATION_YAML_PATH != '' &&  inputs.COMMIT_ID == '')
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
-          CONFIGURATION_YAML_PATH: ${{ GITHUB.WORKSPACE }}/${{ inputs.CONFIGURATION_YAML_PATH }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = "Stop"
-          $VerbosePreference = "Continue"
-          $InformationPreference = "Continue"
-
-          Write-Information "Setting name variables..."
-          $releaseFileName = "publisher-linux-x64.zip"
-          $executableFileName = "publisher"
-
-          if ("${{ runner.os }}" -like "*win*") {
-            $releaseFileName = "publisher-win-x64.zip"
-            $executableFileName = "publisher.exe"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*arm*") {
-            $releaseFileName = "publisher-osx-arm64.zip"
-          }
-          elseif ("${{ runner.os }}" -like "*mac*" -and "${{ runner.arch }}" -like "*x86_64*") {
-            $releaseFileName = "publisher-osx-x64.zip"
-          }
-
-          Write-Information "Downloading release..."
-          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
-          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
-          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
-
-          Write-Information "Extracting release..."
-          $executableFolderPath = Join-Path "${{ runner.temp }}" "publisher"
-          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
-          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
-
-          Write-Information "Setting file permissions..."
-          if ("${{ runner.os }}" -like "*linux*")
-          {
-            & chmod +x "$executableFilePath"
-            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
-          }
-
-          Write-Information "Running publisher..."
+          # Note: The publisher executable reads its configuration from environment variables
+          # that are set by the azure/login action and the env block of this step.
           & "$executableFilePath"              
           if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
 

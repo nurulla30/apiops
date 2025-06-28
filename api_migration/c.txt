@@ -1,0 +1,12 @@
+node ./capture.js \
+  --subscriptionId "" \
+  --resourceGroupName "" \
+  --serviceName "" \
+  --folder “../../apim01”
+
+
+node ./generate.js \
+  --subscriptionId ""\
+  --resourceGroupName "" \
+  --serviceName "" \
+  --folder “../../apim01”

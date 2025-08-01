@@ -24,11 +24,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Debug Directory Contents
+        run: |
+          echo "Listing workspace contents:"
+          ls -la ${{ github.workspace }}
+          echo "Listing policy_fragments_deploy contents:"
+          ls -la ${{ github.workspace }}/policy_fragments_deploy/
+
       - name: Clean and Copy Policy Fragments
         run: |
           rm -rf ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/*
           mkdir -p ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments
-          ls -la ${{ github.workspace }}/policy_fragments_deploy/
           cp -R ${{ github.workspace }}/policy_fragments_deploy/test ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments/
 
       - name: Run publisher

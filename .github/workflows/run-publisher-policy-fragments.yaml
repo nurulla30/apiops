@@ -30,18 +30,19 @@ jobs:
 
       - name: Prepare artifacts for policy fragments only
         run: |
-          $tempArtifactsPath = Join-Path "${{ runner.temp }}" "policy_fragments_artifacts"
-          New-Item -ItemType Directory -Path $tempArtifactsPath
+          $tempArtifactsPath = Join-Path "${{ runner.temp }}" "publisher_artifacts_temp"
+          $targetPolicyFragmentsPath = Join-Path $tempArtifactsPath "policy fragments"
+          New-Item -ItemType Directory -Path $targetPolicyFragmentsPath -Force
 
           $policyFragmentName = "${{ github.event.inputs.POLICY_FRAGMENT_NAME }}"
           $sourcePath = "${{ github.workspace }}/api_migration/apimartifacts/policy fragments"
 
           if (-not [string]::IsNullOrEmpty($policyFragmentName)) {
             Write-Information "Copying specific policy fragment: $policyFragmentName"
-            Copy-Item -Path (Join-Path $sourcePath $policyFragmentName) -Destination $tempArtifactsPath -Recurse
+            Copy-Item -Path (Join-Path $sourcePath $policyFragmentName) -Destination $targetPolicyFragmentsPath -Recurse
           } else {
             Write-Information "Copying all policy fragments."
-            Copy-Item -Path $sourcePath -Destination $tempArtifactsPath -Recurse
+            Copy-Item -Path (Join-Path $sourcePath "*") -Destination $targetPolicyFragmentsPath -Recurse
           }
           echo "API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH=$tempArtifactsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         shell: pwsh

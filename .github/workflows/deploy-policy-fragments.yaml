@@ -1,4 +1,4 @@
-name: Run Publisher Fragments with Environment
+name: Deploy Policy Fragments
 
 on:
   workflow_dispatch:
@@ -13,9 +13,7 @@ on:
 
 env:
   apiops_release_version: v6.0.1.7
-  # NEW: Centralize your artifacts path
   ARTIFACTS_PATH: api_migration/apimartifacts
-  # By default, this will be Information but if you want something different you will need to add a variable in the Settings -> Environment -> Environment variables section
   Logging__LogLevel__Default: ${{ vars.LOG_LEVEL || 'Information' }}
 
 jobs:
@@ -26,6 +24,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clean and Copy Policy Fragments
+        run: |
+          rm -rf ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/*
+          mkdir -p ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments
+          cp -R ${{ github.workspace }}/policy_fragments_deploy/* ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments/
+
       - name: Run publisher
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -34,8 +38,7 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
           API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          # IMPORTANT: updated to point to your subfolder
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy fragments
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"
@@ -72,7 +75,7 @@ jobs:
           }
 
           Write-Information "Running publisher..."
-          & "$executableFilePath" --policy-fragments-only
+          & "$executableFilePath"
           if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
 
           Write-Information "Execution complete."

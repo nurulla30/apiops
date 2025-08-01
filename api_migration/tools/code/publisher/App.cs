@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.FeatureManagement;
 using System;
+using System.CommandLine;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -159,84 +160,91 @@ internal static class AppModule
 
         var releaseVersion = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "0.0.0";
 
-
-        return async cancellationToken =>
+        return async (cancellationToken, policyFragmentsOnly) =>
         {
             using var activity = activitySource.StartActivity(nameof(RunApplication));
 
             logger.LogInformation("Running publisher {ReleaseVersion}...", releaseVersion);
 
-            await putNamedValues(cancellationToken);
-            await putGateways(cancellationToken);
-            await putTags(cancellationToken);
-            await putVersionSets(cancellationToken);
-            await putBackends(cancellationToken);
-            await putLoggers(cancellationToken);
-            await putDiagnostics(cancellationToken);
-            await putPolicyFragments(cancellationToken);
-            await putServicePolicies(cancellationToken);
-            await putProducts(cancellationToken);
-            await putGroups(cancellationToken);
-            await putApis(cancellationToken);
-            await putSubscriptions(cancellationToken);
-            await putApiPolicies(cancellationToken);
-            await putApiTags(cancellationToken);
-            await putApiDiagnostics(cancellationToken);
-            await putGatewayApis(cancellationToken);
-            await putProductPolicies(cancellationToken);
-            await putProductGroups(cancellationToken);
-            await putProductTags(cancellationToken);
-            await putProductApis(cancellationToken);
-            await putApiOperationPolicies(cancellationToken);
-
-            if (await featureManager.IsEnabledAsync("Workspaces"))
+            if (policyFragmentsOnly)
             {
-                await putWorkspaceNamedValues(cancellationToken);
-                await putWorkspaceBackends(cancellationToken);
-                await putWorkspaceTags(cancellationToken);
-                await putWorkspaceVersionSets(cancellationToken);
-                await putWorkspaceLoggers(cancellationToken);
-                await putWorkspaceDiagnostics(cancellationToken);
-                await putWorkspacePolicyFragments(cancellationToken);
-                await putWorkspacePolicies(cancellationToken);
-                await putWorkspaceProducts(cancellationToken);
-                await putWorkspaceGroups(cancellationToken);
-                await putWorkspaceApis(cancellationToken);
-                await deleteWorkspaceApis(cancellationToken);
-                await deleteWorkspaceGroups(cancellationToken);
-                await deleteWorkspaceProducts(cancellationToken);
-                await deleteWorkspacePolicies(cancellationToken);
-                await deleteWorkspacePolicyFragments(cancellationToken);
-                await deleteWorkspaceDiagnostics(cancellationToken);
-                await deleteWorkspaceLoggers(cancellationToken);
-                await deleteWorkspaceVersionSets(cancellationToken);
-                await deleteWorkspaceTags(cancellationToken);
-                await deleteWorkspaceBackends(cancellationToken);
-                await deleteWorkspaceNamedValues(cancellationToken);
+                await putPolicyFragments(cancellationToken);
+                await deletePolicyFragments(cancellationToken);
             }
+            else
+            {
+                await putNamedValues(cancellationToken);
+                await putGateways(cancellationToken);
+                await putTags(cancellationToken);
+                await putVersionSets(cancellationToken);
+                await putBackends(cancellationToken);
+                await putLoggers(cancellationToken);
+                await putDiagnostics(cancellationToken);
+                await putPolicyFragments(cancellationToken);
+                await putServicePolicies(cancellationToken);
+                await putProducts(cancellationToken);
+                await putGroups(cancellationToken);
+                await putApis(cancellationToken);
+                await putSubscriptions(cancellationToken);
+                await putApiPolicies(cancellationToken);
+                await putApiTags(cancellationToken);
+                await putApiDiagnostics(cancellationToken);
+                await putGatewayApis(cancellationToken);
+                await putProductPolicies(cancellationToken);
+                await putProductGroups(cancellationToken);
+                await putProductTags(cancellationToken);
+                await putProductApis(cancellationToken);
+                await putApiOperationPolicies(cancellationToken);
 
-            await deleteApiOperationPolicies(cancellationToken);
-            await deleteProductApis(cancellationToken);
-            await deleteProductTags(cancellationToken);
-            await deleteProductGroups(cancellationToken);
-            await deleteProductPolicies(cancellationToken);
-            await deleteGatewayApis(cancellationToken);
-            await deleteApiDiagnostics(cancellationToken);
-            await deleteApiTags(cancellationToken);
-            await deleteApiPolicies(cancellationToken);
-            await deleteSubscriptions(cancellationToken);
-            await deleteApis(cancellationToken);
-            await deleteGroups(cancellationToken);
-            await deleteProducts(cancellationToken);
-            await deleteServicePolicies(cancellationToken);
-            await deletePolicyFragments(cancellationToken);
-            await deleteDiagnostics(cancellationToken);
-            await deleteLoggers(cancellationToken);
-            await deleteVersionSets(cancellationToken);
-            await deleteTags(cancellationToken);
-            await deleteBackends(cancellationToken);
-            await deleteGateways(cancellationToken);
-            await deleteNamedValues(cancellationToken);
+                if (await featureManager.IsEnabledAsync("Workspaces"))
+                {
+                    await putWorkspaceNamedValues(cancellationToken);
+                    await putWorkspaceBackends(cancellationToken);
+                    await putWorkspaceTags(cancellationToken);
+                    await putWorkspaceVersionSets(cancellationToken);
+                    await putWorkspaceLoggers(cancellationToken);
+                    await putWorkspaceDiagnostics(cancellationToken);
+                    await putWorkspacePolicyFragments(cancellationToken);
+                    await putWorkspacePolicies(cancellationToken);
+                    await putWorkspaceProducts(cancellationToken);
+                    await putWorkspaceGroups(cancellationToken);
+                    await putWorkspaceApis(cancellationToken);
+                    await deleteWorkspaceApis(cancellationToken);
+                    await deleteWorkspaceGroups(cancellationToken);
+                    await deleteWorkspaceProducts(cancellationToken);
+                    await deleteWorkspacePolicies(cancellationToken);
+                    await deleteWorkspacePolicyFragments(cancellationToken);
+                    await deleteWorkspaceDiagnostics(cancellationToken);
+                    await deleteWorkspaceLoggers(cancellationToken);
+                    await deleteWorkspaceVersionSets(cancellationToken);
+                    await deleteWorkspaceTags(cancellationToken);
+                    await deleteWorkspaceBackends(cancellationToken);
+                    await deleteWorkspaceNamedValues(cancellationToken);
+                }
+
+                await deleteApiOperationPolicies(cancellationToken);
+                await deleteProductApis(cancellationToken);
+                await deleteProductTags(cancellationToken);
+                await deleteProductGroups(cancellationToken);
+                await deleteProductPolicies(cancellationToken);
+                await deleteGatewayApis(cancellationToken);
+                await deleteApiDiagnostics(cancellationToken);
+                await deleteApiTags(cancellationToken);
+                await deleteApiPolicies(cancellationToken);
+                await deleteSubscriptions(cancellationToken);
+                await deleteApis(cancellationToken);
+                await deleteGroups(cancellationToken);
+                await deleteProducts(cancellationToken);
+                await deleteServicePolicies(cancellationToken);
+                await deletePolicyFragments(cancellationToken);
+                await deleteDiagnostics(cancellationToken);
+                await deleteLoggers(cancellationToken);
+                await deleteVersionSets(cancellationToken);
+                await deleteTags(cancellationToken);
+                await deleteBackends(cancellationToken);
+                await deleteGateways(cancellationToken);
+                await deleteNamedValues(cancellationToken);
+            }
 
             logger.LogInformation("Publisher completed.");
         };

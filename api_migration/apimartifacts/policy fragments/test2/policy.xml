@@ -1,5 +1,5 @@
 <fragment>
 	<set-header name="X-Example-Header-1" exists-action="override">
-		<value>example value 5 test deployment</value>
+		<value>example value 6 test deployment</value>
 	</set-header>
 </fragment>

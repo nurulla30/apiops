@@ -10,6 +10,10 @@ on:
         options:
           - dev
           - prod
+      POLICY_FRAGMENT_NAME:
+        description: 'Optional: Specify a single policy fragment name to deploy. Leave blank to deploy all.'
+        required: false
+        type: string
 
 env:
   apiops_release_version: v6.0.1.7
@@ -28,7 +32,17 @@ jobs:
         run: |
           $tempArtifactsPath = Join-Path "${{ runner.temp }}" "policy_fragments_artifacts"
           New-Item -ItemType Directory -Path $tempArtifactsPath
-          Copy-Item -Path "${{ github.workspace }}/api_migration/apimartifacts/policy fragments" -Destination $tempArtifactsPath -Recurse
+
+          $policyFragmentName = "${{ github.event.inputs.POLICY_FRAGMENT_NAME }}"
+          $sourcePath = "${{ github.workspace }}/api_migration/apimartifacts/policy fragments"
+
+          if (-not [string]::IsNullOrEmpty($policyFragmentName)) {
+            Write-Information "Copying specific policy fragment: $policyFragmentName"
+            Copy-Item -Path (Join-Path $sourcePath $policyFragmentName) -Destination $tempArtifactsPath -Recurse
+          } else {
+            Write-Information "Copying all policy fragments."
+            Copy-Item -Path $sourcePath -Destination $tempArtifactsPath -Recurse
+          }
           echo "API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH=$tempArtifactsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         shell: pwsh
 

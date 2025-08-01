@@ -40,6 +40,8 @@ jobs:
       - name: Clean and Copy Policy Fragments
         run: |
           set -x
+          echo "Listing root workspace contents:"
+          ls -la ${{ github.workspace }}
           rm -rf ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/*
           mkdir -p ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments
           cp -R ${{ github.workspace }}/policy_fragments_deploy/test ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments/

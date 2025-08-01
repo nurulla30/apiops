@@ -13,8 +13,6 @@ on:
 
 env:
   apiops_release_version: v6.0.1.7
-  # NEW: Centralize your artifacts path
-  ARTIFACTS_PATH: api_migration/apimartifacts
   # By default, this will be Information but if you want something different you will need to add a variable in the Settings -> Environment -> Environment variables section
   Logging__LogLevel__Default: ${{ vars.LOG_LEVEL || 'Information' }}
 
@@ -26,6 +24,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Prepare artifacts for policy fragments only
+        run: |
+          $tempArtifactsPath = Join-Path "${{ runner.temp }}" "policy_fragments_artifacts"
+          New-Item -ItemType Directory -Path $tempArtifactsPath
+          Copy-Item -Path "${{ github.workspace }}/api_migration/apimartifacts/policy fragments" -Destination $tempArtifactsPath -Recurse
+          echo "API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH=$tempArtifactsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
+
       - name: Run publisher
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -34,8 +40,6 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
           API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          # IMPORTANT: updated to point to your subfolder
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"
@@ -72,7 +76,7 @@ jobs:
           }
 
           Write-Information "Running publisher..."
-          & "$executableFilePath" --policyFragments
+          & "$executableFilePath"
           if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
 
           Write-Information "Execution complete."

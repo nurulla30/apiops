@@ -35,7 +35,7 @@ jobs:
           AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
           API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
           # IMPORTANT: updated to point to your subfolder
-          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy fragments
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}/policy_fragments
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"

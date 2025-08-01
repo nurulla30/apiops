@@ -4,7 +4,7 @@ info:
   description: ''
   version: '1.0'
 servers:
-  - url: https://apim-test-1-dxyf7x.azure-api.net
+  - url: https://apim-test-1-r6os3a.azure-api.net
 paths:
   /test:
     get:
@@ -13,7 +13,7 @@ paths:
       operationId: test
       responses:
         '200':
-          description: 
+          description: ''
 components:
   securitySchemes:
     apiKeyHeader:

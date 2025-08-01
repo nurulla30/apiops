@@ -3,6 +3,14 @@ name: Run - Extractor
 on:
   workflow_dispatch:
     inputs:
+      API_MANAGEMENT_ENVIRONMENT:
+        description: 'Choose the environment to extract from.'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+          - qa
       CONFIGURATION_YAML_PATH:
         description: 'Choose Wether to extract all Apis or extract apis listed an extraction configuration file'     
         required: true
@@ -28,19 +36,26 @@ env:
 jobs:
   extract:
     runs-on: ubuntu-latest
-    environment: dev 
+    environment: ${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: |
+          ENV_FILE="api_migration/.env.${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}"
+          if [ -f "$ENV_FILE" ]; then
+            echo "Loading environment variables from $ENV_FILE"
+            grep -v '^#' "$ENV_FILE" | xargs -d '\n' -I {} echo "{}" >> $GITHUB_ENV
+          else
+            echo "Error: Environment file $ENV_FILE not found."
+            exit 1
+          fi
+        shell: bash
           
       - name: Run extractor without Config Yaml
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH == 'Extract All APIs' }}
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
         run: |
@@ -88,12 +103,7 @@ jobs:
       - name: Run extractor with Config Yaml
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH != 'Extract All APIs' }}
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
           CONFIGURATION_YAML_PATH:  ${{ github.workspace }}/${{ github.event.inputs.CONFIGURATION_YAML_PATH }}

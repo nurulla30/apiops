@@ -62,6 +62,7 @@ jobs:
       - name: Run publisher
         env:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          CONFIGURATION_YAML_PATH: api_migration/configuration.prod.yaml
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = "Stop"

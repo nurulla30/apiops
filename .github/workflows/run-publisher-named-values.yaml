@@ -97,6 +97,10 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
           }
 
+          Write-Information "--- Printing environment variables ---"
+          Get-ChildItem -Path Env:
+          Write-Information "--- End of environment variables ---"
+
           Write-Information "Running publisher..."
           & "$executableFilePath"
           if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}

@@ -97,9 +97,9 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
           }
 
-          Write-Information "--- Printing environment variables ---"
-          Get-ChildItem -Path Env:
-          Write-Information "--- End of environment variables ---"
+          Write-Information "--- Printing AZURE_TENANT_ID ---"
+          echo "AZURE_TENANT_ID is: $env:AZURE_TENANT_ID"
+          Write-Information "--- End of AZURE_TENANT_ID ---"
 
           Write-Information "Running publisher..."
           & "$executableFilePath"

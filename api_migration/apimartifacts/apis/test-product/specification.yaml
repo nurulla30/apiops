@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Test Product
-  description: ''
+  description: dfbverg
   version: '1.0'
 servers:
   - url: https://apim-test-1-r6os3a.azure-api.net

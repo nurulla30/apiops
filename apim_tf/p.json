@@ -1,19 +1,17 @@
 <policies>
     <inbound>
         <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Authentication required"
-                      openid-config-url="https://login.microsoftonline.com/api.moral.com/v2.0/.well-known/openid-configuration" >
+                      open-id-config="https://login.microsoftonline.com/api.moral.com/v2.0/.well-known/openid-configuration" >
             <audiences>
                 <audience>all-audiences</audience>
             </audiences>
         </validate-jwt>
-        <base />
-    </inbound>
+        </inbound>
     <backend>
         <forward-request />
     </backend>
     <outbound>
-        <base />
-    </outbound>
+        </outbound>
     <on-error>
         <choose>
             <when condition="@(context.LastError?.Source == "validate-jwt")">
@@ -22,12 +20,13 @@
                     <set-header name="WWW-Authenticate" exists-action="override">
                         <value>Bearer error="invalid_token", error_description="Authentication required"</value>
                     </set-header>
+                    <set-body>{"statusCode": 401, "message": "Authentication required - Invalid Token"}</set-body>
                 </return-response>
             </when>
             <otherwise>
                 <return-response>
                     <set-status code="@(context.Response.StatusCode)" reason="@(context.Response.StatusReason)" />
-                    <set-body>@(context.Response.Body.As<string>())</set-body>
+                    <set-body>@(context.Response.Body.As<string>(preserveContent: true) ?? JObject.FromObject(new { statusCode = context.Response.StatusCode, message = context.Response.StatusReason }).ToString())</set-body>
                 </return-response>
             </otherwise>
         </choose>

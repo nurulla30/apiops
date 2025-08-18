@@ -1,14 +1,16 @@
 <policies>
   <inbound>
-    <!-- Optional: quick header gate for matched APIs -->
+    <!-- Allow CORS preflight without auth -->
     <choose>
       <when condition="@(context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))">
         <return-response>
           <set-status code="204" reason="No Content" />
         </return-response>
       </when>
+
+      <!-- Quick header gate for matched APIs -->
       <when condition="@(!context.Request.Headers.ContainsKey("Authorization") 
-                         || !context.Request.Headers.GetValueOrDefault("Authorization").StartsWith("Bearer "))">
+                         || !context.Request.Headers.GetValueOrDefault("Authorization").StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))">
         <return-response>
           <set-status code="401" reason="Unauthorized" />
           <set-header name="WWW-Authenticate" exists-action="override">
@@ -18,9 +20,9 @@
         </return-response>
       </when>
     </choose>
-    <base />
   </inbound>
-  <backend><base /></backend>
-  <outbound><base /></outbound>
-  <on-error><base /></on-error>
+
+  <backend />
+  <outbound />
+  <on-error />
 </policies>

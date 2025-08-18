@@ -6,7 +6,7 @@
                 <audience>all-audiences</audience>
             </audiences>
         </validate-jwt>
-        </inbound>
+    </inbound>
     <backend>
         <forward-request />
     </backend>

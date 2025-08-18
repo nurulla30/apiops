@@ -1,7 +1,7 @@
 <policies>
     <inbound>
         <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Authentication required"
-                      open-id-config="https://login.microsoftonline.com/api.moral.com/v2.0/.well-known/openid-configuration" >
+                      open-id-config="https://login.microsoftonline.com/api.moral.com/v2.0/.well-known/openid-configuration">
             <audiences>
                 <audience>all-audiences</audience>
             </audiences>

@@ -1,42 +1,72 @@
 <policies>
+  <!-- Runs only when a request maps to some API/operation -->
   <inbound>
-    <!-- Allow OPTIONS without auth -->
+    <!-- Optional: fast-fail if Authorization header is missing -->
     <choose>
-      <when condition="@(context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))">
-        <return-response>
-          <set-status code="204" reason="No Content" />
-        </return-response>
-      </when>
-    </choose>
-
-    <!-- Require Authorization header -->
-    <choose>
-      <when condition="@(!context.Request.Headers.ContainsKey("Authorization") 
-                         || !context.Request.Headers.GetValueOrDefault("Authorization").StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))">
+      <when condition='@(!context.Request.Headers.ContainsKey("Authorization"))'>
         <return-response>
           <set-status code="401" reason="Unauthorized" />
           <set-header name="WWW-Authenticate" exists-action="override">
-            <value>Bearer</value>
+            <value>Bearer realm="apim", error="invalid_token", error_description="Authentication required"</value>
           </set-header>
-          <set-body>Authentication required.</set-body>
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body>{"error":"Authentication required"}</set-body>
         </return-response>
       </when>
     </choose>
-
-    <!-- Validate JWT -->
-    <validate-jwt header-name="Authorization" require-scheme="Bearer"
-                  failed-validation-httpcode="401"
-                  failed-validation-error-message="Invalid token">
-      <openid-config url="https://login.microsoftonline.com/<TENANT_ID>/v2.0/.well-known/openid-configuration" />
-    </validate-jwt>
-
-    <!-- Token valid but path doesn’t exist -->
-    <return-response>
-      <set-status code="404" reason="Not Found" />
-      <set-body>{"error":"No API matched path"}</set-body>
-    </return-response>
+    <!-- no <base/> at global scope -->
   </inbound>
+
   <backend />
   <outbound />
-  <on-error />
+
+  <!-- Runs when NO API/operation matched -->
+  <on-error>
+    <choose>
+      <when condition='@((string)context.LastError?.Reason == "OperationNotFound")'>
+
+        <!-- Decide 401 vs 404 based on Authorization header presence/shape -->
+        <set-variable name="authz"
+                      value='@((string)context.Request.Headers.GetValueOrDefault("Authorization"))' />
+        <set-variable name="isBearer"
+                      value='@(!string.IsNullOrEmpty((string)context.Variables["authz"])
+                               && ((string)context.Variables["authz"])
+                                   .StartsWith("Bearer ", System.StringComparison.OrdinalIgnoreCase))' />
+
+        <choose>
+          <!-- Unauthenticated callers (no/malformed header) → 401 -->
+          <when condition='@(!(bool)context.Variables["isBearer"])'>
+            <return-response>
+              <set-status code="401" reason="Unauthorized" />
+              <set-header name="WWW-Authenticate" exists-action="override">
+                <value>Bearer realm="apim", error="invalid_token", error_description="Authentication required"</value>
+              </set-header>
+              <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+              </set-header>
+              <set-body>{"error":"Authentication required"}</set-body>
+            </return-response>
+          </when>
+
+          <!-- Auth header present (looks like Bearer) → 404 JSON safety net -->
+          <otherwise>
+            <return-response>
+              <set-status code="404" reason="Not Found" />
+              <set-header name="Content-Type" exists-action="override">
+                <value>application/json</value>
+              </set-header>
+              <set-body>{
+                "error":"Route not found",
+                "method":"@(context.Request.Method)",
+                "path":"@(context.Request.OriginalUrl.PathAndQuery)"
+              }</set-body>
+            </return-response>
+          </otherwise>
+        </choose>
+      </when>
+      <!-- other errors keep default behavior -->
+    </choose>
+  </on-error>
 </policies>

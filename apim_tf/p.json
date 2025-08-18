@@ -1,58 +1,40 @@
-<on-error>
-  <choose>
-    <when condition='@((string)context.LastError?.Reason == "OperationNotFound")'>
+<policies>
+  <inbound>
+    <!-- Optional: fast CORS preflight for browsers -->
+    <choose>
+      <when condition="@((string)context.Request.Method == "OPTIONS")">
+        <return-response>
+          <set-status code="200" reason="OK" />
+          <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>*</value></set-header>
+          <set-header name="Access-Control-Allow-Methods" exists-action="override"><value>GET,POST,PUT,PATCH,DELETE,OPTIONS</value></set-header>
+          <set-header name="Access-Control-Allow-Headers" exists-action="override"><value>authorization,content-type</value></set-header>
+        </return-response>
+      </when>
+    </choose>
 
-      <!-- Pull and sanity-check Authorization -->
-      <set-variable name="authz"
-                    value='@((string)context.Request.Headers.GetValueOrDefault("Authorization"))' />
-      <set-variable name="isBearer"
-                    value='@(!string.IsNullOrEmpty((string)context.Variables["authz"])
-                             && ((string)context.Variables["authz"])
-                               .StartsWith("Bearer ", System.StringComparison.OrdinalIgnoreCase))' />
-      <set-variable name="token"
-                    value='@((bool)context.Variables["isBearer"]
-                             ? ((string)context.Variables["authz"]).Substring(7).Trim()
-                             : null)' />
-      <!-- NEW: must look like a real JWT (three segments) -->
-      <set-variable name="parts"
-                    value='@(!string.IsNullOrEmpty((string)context.Variables["token"])
-                             ? ((string)context.Variables["token"]).Split('.').Length
-                             : 0)' />
-      <set-variable name="looksLikeJwt"
-                    value='@((int)context.Variables["parts"] == 3)' />
+    <!-- JWT gate: if token missing/invalid => 401 -->
+    <validate-jwt header-name="Authorization"
+                  require-expiration-time="true"
+                  failed-validation-httpcode="401"
+                  failed-validation-error-message="Authentication required">
+      <!-- Replace TENANT_ID and AUDIENCE to match your existing working APIs -->
+      <openid-config url="https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration" />
+      <audiences>
+        <audience>{YOUR_AUDIENCE_OR_CLIENT_ID}</audience>
+      </audiences>
+      <!-- Optionally restrict issuers:
+      <issuers><issuer>https://sts.windows.net/{TENANT_ID}/</issuer></issuers>
+      -->
+    </validate-jwt>
 
-      <choose>
-        <!-- unauthenticated: no/malformed header OR not a 3-part JWT -->
-        <when condition='@(!(bool)context.Variables["isBearer"]
-                           || !(bool)context.Variables["looksLikeJwt"])'>
-          <return-response>
-            <set-status code="401" reason="Unauthorized" />
-            <set-header name="WWW-Authenticate" exists-action="override">
-              <value>Bearer realm="apim", error="invalid_token", error_description="Authentication required"</value>
-            </set-header>
-            <set-header name="Content-Type" exists-action="override">
-              <value>application/json</value>
-            </set-header>
-            <set-body>{"error":"Authentication required"}</set-body>
-          </return-response>
-        </when>
-
-        <!-- looks like a JWT (Bearer + 3 parts) → treat as authenticated, return 404 -->
-        <otherwise>
-          <return-response>
-            <set-status code="404" reason="Not Found" />
-            <set-header name="Content-Type" exists-action="override">
-              <value>application/json</value>
-            </set-header>
-            <!-- keep body simple & APIM-friendly -->
-            <set-body>{
-              "error":"Route not found",
-              "method":"@(context.Request.Method)",
-              "path":"@(context.Request.OriginalUrl.PathAndQuery)"
-            }</set-body>
-          </return-response>
-        </otherwise>
-      </choose>
-    </when>
-  </choose>
-</on-error>
+    <!-- Token is valid but no real route matched => 404 -->
+    <return-response>
+      <set-status code="404" reason="Not Found" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@("{""error"":""Route not found""}")</set-body>
+    </return-response>
+  </inbound>
+  <backend />
+  <outbound />
+  <on-error />
+</policies>

@@ -1,42 +1,26 @@
 <policies>
   <inbound>
-    <!-- Optional: fast CORS preflight for browsers -->
+    <!-- Optional: quick header gate for matched APIs -->
     <choose>
-      <when condition="@(context.Request.Method == "OPTIONS")">
+      <when condition="@(context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))">
         <return-response>
-          <set-status code="200" reason="OK" />
-          <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>*</value></set-header>
-          <set-header name="Access-Control-Allow-Methods" exists-action="override"><value>GET,POST,PUT,PATCH,DELETE,OPTIONS</value></set-header>
-          <set-header name="Access-Control-Allow-Headers" exists-action="override"><value>Authorization,Content-Type</value></set-header>
+          <set-status code="204" reason="No Content" />
+        </return-response>
+      </when>
+      <when condition="@(!context.Request.Headers.ContainsKey("Authorization") 
+                         || !context.Request.Headers.GetValueOrDefault("Authorization").StartsWith("Bearer "))">
+        <return-response>
+          <set-status code="401" reason="Unauthorized" />
+          <set-header name="WWW-Authenticate" exists-action="override">
+            <value>Bearer</value>
+          </set-header>
+          <set-body>Authentication required.</set-body>
         </return-response>
       </when>
     </choose>
-
-    <!-- JWT gate: if token missing/invalid => 401 -->
-    <validate-jwt header-name="Authorization"
-                  require-expiration-time="true"
-                  failed-validation-httpcode="401"
-                  failed-validation-error-message="Authentication required">
-      <openid-config url="https://login.microsoftonline.com/<TENANT_ID>/v2.0/.well-known/openid-configuration" />
-      <audiences>
-        <audience>YOUR-API-APP-ID-URI-OR-CLIENT-ID</audience>
-      </audiences>
-      <issuers>
-        <issuer>https://sts.windows.net/<TENANT_ID>/</issuer>
-      </issuers>
-    </validate-jwt>
-
-    <!-- Token is valid but no real route matched => 404 -->
-    <return-response>
-      <set-status code="404" reason="Not Found" />
-      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
-      <set-body>{
-        "error": "Route not found"
-      }</set-body>
-    </return-response>
+    <base />
   </inbound>
-
-  <backend />
-  <outbound />
-  <on-error />
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error><base /></on-error>
 </policies>

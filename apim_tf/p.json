@@ -1,14 +1,16 @@
 <policies>
   <inbound>
-    <!-- Allow CORS preflight without auth -->
+    <!-- Allow OPTIONS without auth -->
     <choose>
       <when condition="@(context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))">
         <return-response>
           <set-status code="204" reason="No Content" />
         </return-response>
       </when>
+    </choose>
 
-      <!-- Quick header gate for matched APIs -->
+    <!-- Require Authorization header -->
+    <choose>
       <when condition="@(!context.Request.Headers.ContainsKey("Authorization") 
                          || !context.Request.Headers.GetValueOrDefault("Authorization").StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))">
         <return-response>
@@ -20,8 +22,20 @@
         </return-response>
       </when>
     </choose>
-  </inbound>
 
+    <!-- Validate JWT -->
+    <validate-jwt header-name="Authorization" require-scheme="Bearer"
+                  failed-validation-httpcode="401"
+                  failed-validation-error-message="Invalid token">
+      <openid-config url="https://login.microsoftonline.com/<TENANT_ID>/v2.0/.well-known/openid-configuration" />
+    </validate-jwt>
+
+    <!-- Token valid but path doesn’t exist -->
+    <return-response>
+      <set-status code="404" reason="Not Found" />
+      <set-body>{"error":"No API matched path"}</set-body>
+    </return-response>
+  </inbound>
   <backend />
   <outbound />
   <on-error />

@@ -1,7 +1,8 @@
-Resources
-| where type == "microsoft.keyvault/vaults/certificates/versions"
-| extend CertName = name
-| extend ExpirationDate = todatetime(properties.attributes.expires)
-| extend DaysTillExpire = datetime_diff("day", ExpirationDate, now())
-| where CertName contains "mtls-cert-kv"
-| project subscriptionId, resourceGroup, CertName, ExpirationDate, DaysTillExpire
+resources
+| where type =~ 'microsoft.keyvault/vaults/certificates'
+| where properties.vaultUri contains "your-key-vault-name"
+| where properties.attributes.enabled == true
+| project name, expiryDate = todatetime(properties.attributes.expires), tags
+| extend daysRemaining = datetime_diff('day', expiryDate, now())
+| where daysRemaining > 0 // Optional: Only show certificates that have not yet expired
+| order by daysRemaining asc

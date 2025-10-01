@@ -14,7 +14,24 @@ ApiManagementGatewayLogs
             anomalies to typeof(int)
 | where anomalies == 1
 
+=========================for all response code=====================
+let window = 14d;    // history length
+let step = 5m;       // evaluation granularity
+ApiManagementGatewayLogs
+| where TimeGenerated > ago(window)
+| where IsRequestSuccess == false
+| where ResponseCode in (400,401,409,422,429,500,503)
+| where ApiId == "fs-portfolio-accounting"
+| summarize Failures = count() by ResponseCode, bin(TimeGenerated, step)
+| make-series Failures = avg(Failures) on TimeGenerated 
+        from ago(window) to now() step step 
+        by ResponseCode
+| extend (anomalies, score, baseline) = series_decompose_anomalies(Failures, 1.5, -1, "linefit")
+| mv-expand TimeGenerated, Failures, anomalies, ResponseCode
+| where anomalies == 1
 
+
+detatails:
 This KQL query is designed to detect unusual spikes in 401 Unauthorized errors for the fs-portfolio-accounting API.
 Instead of firing an alert every time a 401 occurs, it uses anomaly detection to only alert when the number of 401s is abnormal compared to the historical baseline.
 

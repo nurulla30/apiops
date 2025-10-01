@@ -112,3 +112,46 @@ Less noise: avoids unnecessary alerts for normal background failures.
 More signal: surfaces genuine issues (misconfigured client, mass login failures, security incidents).
 
 Data-driven thresholds: adjusts automatically as traffic patterns change, without needing manual re-tuning.
+
+
+
+Client Requirement (per attached screenshots):
+
+Client has requested log-based alerts with static thresholds for the fs-portfolio-accounting API.
+
+Each HTTP response code must have its own static threshold condition:
+
+Response Code	Threshold (Static)	Notes
+400 – Bad Request	Alert if >20 / hour	Throttle at hourly window
+401 – Unauthorized	Alert on every response	Each occurrence
+409 – Conflict	Alert on every response	Each occurrence
+422 – Unprocessable Content	Alert if >20 / hour	Hourly aggregation
+429 – Too Many Requests	Alert on every response	Each occurrence
+500 – Internal Server Error	Alert if >5 / minute	High sensitivity
+503 – Service Unavailable	Alert on every response	Each occurrence
+
+Notifications must route via PagerDuty (DEV and DEV/ASG groups as mapped in client’s table).
+
+Essentially, the client expects 7 separate static alert rules based on different error codes and thresholds.
+
+Our Implementation Approach:
+
+Instead of static thresholds, we are implementing dynamic anomaly detection alerts using KQL functions like series_decompose_anomalies().
+
+Why dynamic?
+
+Smarter detection: Uses 14 days of history to learn baseline patterns per error code.
+
+Noise reduction: Avoids firing alerts for routine background failures (e.g., normal 401 login errors).
+
+Future-proof: Automatically adjusts as traffic grows, unlike fixed 20/hr or 5/min rules that require manual tuning.
+
+Focus on real issues: Ensures PagerDuty only gets notified when error rates deviate significantly from the learned baseline (true anomalies).
+
+Next Steps:
+
+Configure dynamic alert queries for response codes 400, 401, 409, 422, 429, 500, 503.
+
+Single query can handle all codes with ResponseCode dimension, but we may split per code if we need different sensitivities (e.g., reduce noise on 401 while keeping 500/503 strict).
+
+Deliver initial setup in Azure Monitor → Log Alerts, with anomaly-based detection and action groups to PagerDuty.

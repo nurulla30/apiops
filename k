@@ -1,4 +1,4 @@
-cat <<EOF | base64 --decode > 
+cat <<EOF | base64 --decode > cert.pem
 <PASTE_YOUR_BASE64_CERT_DATA_HERE>
 EOF
 

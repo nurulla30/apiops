@@ -1,3 +1,7 @@
+cat <<EOF | base64 --decode > 
+<PASTE_YOUR_BASE64_CERT_DATA_HERE>
+EOF
+
 let window = 14d;   // how much history to analyze
 let step = 5m;      // granularity of evaluation
 ApiManagementGatewayLogs

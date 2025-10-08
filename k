@@ -160,4 +160,74 @@ Single query can handle all codes with ResponseCode dimension, but we may split 
 
 Deliver initial setup in Azure Monitor → Log Alerts, with anomaly-based detection and action groups to PagerDuty.
 
+Alert 1 – HTTP 400 (Bad Request)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 400 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 20
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEV
+Alert 2 – HTTP 401 (Unauthorized)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 401 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 1
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEWASG
+Alert 3 – HTTP 409 (Conflict)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 409 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 1
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEV
+Alert 4 – HTTP 422 (Unprocessable Content)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 422 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 20
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEV
+Alert 5 – HTTP 429 (Too Many Requests)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 429 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 1
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEWASG
+Alert 6 – HTTP 500 (Internal Server Error)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 500 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 5
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEWASG
+Alert 7 – HTTP 503 (Service Unavailable)
+Query:
+ApiManagementGatewayLogs | where TimeGenerated > ago(5m) | where IsRequestSuccess == false | where
+ResponseCode == 503 | where ApiId == "fx-runner"
+Condition & Logic:
+• Operator: Greater than or equal to
+• Threshold value: 1
+• Frequency of evaluation: 5 minutes
+• Aggregation: Count of Table rows (5-minute granularity)
+• PagerDuty: DEWASG
 

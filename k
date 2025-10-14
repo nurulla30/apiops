@@ -1,3 +1,7 @@
+ AppServiceHTTPLogs
+| where TimeGenerated > ago(1h)
+| where OutboundIP_s == ""
+
 cat <<EOF | base64 --decode > cert.pem
 <PASTE_YOUR_BASE64_CERT_DATA_HERE>
 EOF

@@ -1,4 +1,17 @@
- AppServiceHTTPLogs
+az monitor scheduled-query list --resource-group  --query "[].{Name:name, Id:id}" -o table
+
+az monitor scheduled-query show \
+  --resource-group eon72372-use2-prod1-isg01-rg \
+  --name ""
+
+az monitor scheduled-query update \
+  --resource-group  \
+  --name "" \
+  --set criteria.allOf[0].query="ApiManagementGatewayLogs
+
+
+
+AppServiceHTTPLogs
 | where TimeGenerated > ago(1h)
 | where OutboundIP_s == ""
 

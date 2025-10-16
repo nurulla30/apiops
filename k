@@ -7,9 +7,12 @@ az monitor scheduled-query show \
 az monitor scheduled-query update \
   --resource-group  \
   --name "" \
-  --set criteria.allOf[0].query="ApiManagementGatewayLogs
-
-
+  --set criteria.allOf[0].query="ApiManagementGatewayLogs \
+| where TimeGenerated > ago(1m) \
+| where IsRequestSuccess == false \
+| where ResponseCode == 500 \
+| where ApiId == '' \
+| project TimeGenerated, ApiId, Url, ResponseCode, BackendUrl, BackendResponseCode"
 
 AppServiceHTTPLogs
 | where TimeGenerated > ago(1h)

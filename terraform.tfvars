@@ -1,7 +1,7 @@
 resource_group_name = "eon72372-use2-prod1-isg01-rg"
 location            = "East US 2"
 
-data_source_id = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/eon72372-use2-prod1-isg01-rg/providers/Microsoft.ApiManagement/service/isg-use2-prod1-isginfra-apim-1"
+data_source_id = "/subscriptions//resourceGroups//providers/Microsoft.ApiManagement/service/"
 
 # === Action Groups ===
 action_groups = [

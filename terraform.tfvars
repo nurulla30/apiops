@@ -1,4 +1,4 @@
-resource_group_name = "eon72372-use2-prod1-isg01-rg"
+resource_group_name = ""
 location            = "East US 2"
 
 data_source_id = "/subscriptions//resourceGroups//providers/Microsoft.ApiManagement/service/"

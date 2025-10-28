@@ -1,3 +1,9 @@
+az account get-access-token \
+  --resource api:// \
+  --query accessToken -o tsv | jq -R 'split(".") | .[1] | @base64d | fromjson'
+
+
+
 az monitor scheduled-query list --resource-group  --query "[].{Name:name, Id:id}" -o table
 
 az monitor scheduled-query show \

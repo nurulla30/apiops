@@ -1,3 +1,11 @@
+It seems APIM’s Managed Identity uses the resource-based (v1) token flow, which issues tokens with iss=https://sts.windows.net/<tenantId>/ and ver=1.0.
+VEG appears to be configured for v2 token validation, so it rejects the MI-issued token with “Jwt issuer is not configured.”
+
+Current Blocker:
+Issuer version mismatch between the token (v1) and the VEG validation (v2).
+
+
+
 az account get-access-token \
   --resource api:// \
   --query accessToken -o tsv | jq -R 'split(".") | .[1] | @base64d | fromjson'

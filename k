@@ -5,7 +5,7 @@ Current Blocker:
 Issuer version mismatch between the token (v1) and the VEG validation (v2).
 
 
-
+update VEG to trust the v1 issuer (https://sts.windows.net/<tenantId>/) and JWKS (https://login.windows.net/<tenantId>/discovery/keys).
 az account get-access-token \
   --resource api:// \
   --query accessToken -o tsv | jq -R 'split(".") | .[1] | @base64d | fromjson'

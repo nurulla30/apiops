@@ -19,7 +19,6 @@ resource "azurerm_monitor_action_group" "this" {
   tags = each.value.tags
 }
 
-# === Create all Log Alerts ===
 resource "azurerm_monitor_scheduled_query_rules_alert" "this" {
   for_each            = local.alerts
   name                = each.value.name
@@ -30,10 +29,12 @@ resource "azurerm_monitor_scheduled_query_rules_alert" "this" {
   enabled             = true
   data_source_id      = var.data_source_id
 
-  frequency   = each.value.frequency
-  time_window = each.value.time_window
+  # ✅ Correct numeric time values
+  frequency   = tonumber(each.value.frequency)
+  time_window = tonumber(each.value.time_window)
 
-  # Dynamically link to one or more action groups by name
+  depends_on = [azurerm_monitor_action_group.this]
+
   action {
     action_group = [
       for ref in each.value.action_group_refs :

@@ -11,11 +11,6 @@ declare -A CLIENT_IDS=(
   [prod]="33333333-3333-3333-3333-333333333333"
 )
 
-declare -A TENANT_IDS=(
-  [dev]="aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-  [qa]="bbbbbbb2-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-  [prod]="ccccccc3-cccc-cccc-cccc-cccccccccccc"
-)
 
 declare -A SUBSCRIPTIONS=(
   [dev]="sub-dev-xxxx"
@@ -28,6 +23,9 @@ declare -A KEYVAULT_NAMES=(
   [qa]="my-qa-kv"
   [prod]="my-prod-kv"
 )
+
+# Shared tenant ID for all environments
+TENANT_ID=""
 
 # ==============================
 # ENVIRONMENT SELECTION
@@ -53,10 +51,10 @@ echo "Logging into Azure using Service Principal..."
 az login --service-principal \
   --username "${CLIENT_IDS[$ENV]}" \
   --password "$SPN_PASSWORD" \
-  --tenant "${TENANT_IDS[$ENV]}" > /dev/null
+  --tenant "$TENANT_ID" > /dev/null
 
 az account set --subscription "${SUBSCRIPTIONS[$ENV]}"
-echo "✅ Logged in as SPN for $ENV"
+echo "Logged in as SPN for $ENV"
 
 # ==============================
 # ACTION SELECTION

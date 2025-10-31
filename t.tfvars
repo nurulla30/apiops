@@ -68,5 +68,25 @@ alert_definitions = [
       | where BackendResponseCode == 503
       | project TimeGenerated, ApiId, Url, ResponseCode, BackendUrl, BackendResponseCode
     QUERY
+  },
+  alert_definitions = [
+  {
+    name               = "APIM Backend 5xx Alert"
+    description        = "Triggers when 5xx backend errors exceed 12 in 1h"
+    threshold          = 12
+    severity           = 1
+    frequency          = 60          # ✅ 60 minutes
+    time_window        = 60          # ✅ 1-hour window
+    action_group_refs  = ["ag-pagerduty-5xx"]
+    tags               = { alert = "backend5xx", env = "prod" }
+
+    query = <<-QUERY
+      ApiManagementGatewayLogs
+      | where TimeGenerated > ago(1h)
+      | where ISRequestSuccess == false
+      | where BackendResponseCode >= 500
+      | project TimeGenerated, ApiId, Url, ResponseCode, BackendUrl, BackendResponseCode
+    QUERY
   }
+]
 ]

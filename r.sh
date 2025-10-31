@@ -33,17 +33,20 @@ done
 KV_NAME="${KEYVAULT_NAMES[$ENV]}"
 SUBSCRIPTION_ID="${SUBSCRIPTIONS[$ENV]}"
 
-# ==============================
-# LOGIN AS USER
-# ==============================
-echo "Logging in with your Azure user account..."
-az login --use-device-code > /dev/null
 
-echo "Setting subscription context to $SUBSCRIPTION_ID..."
+# ==============================
+# CHECK LOGIN STATUS
+# ==============================
+if az account show > /dev/null 2>&1; then
+  LOGGED_USER=$(az account show --query user.name -o tsv 2>/dev/null || echo "Unknown")
+  echo "✅ Already logged in as: $LOGGED_USER"
+else
+  echo "🔐 No active Azure login found. Please sign in..."
+  az login --use-device-code
+fi
+
+# Always set the correct subscription
 az account set --subscription "$SUBSCRIPTION_ID"
-
-USER_UPN=$(az account show --query user.name -o tsv)
-echo "✅ Logged in as user: $USER_UPN"
 echo "Using Key Vault: $KV_NAME ($ENV)"
 
 # ==============================
@@ -117,5 +120,4 @@ fi
 # ==============================
 # CLEANUP
 # ==============================
-az logout > /dev/null
-echo "✅ Logged out. Done."
+echo "Session complete — keeping login active for future runs."

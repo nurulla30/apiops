@@ -10,11 +10,20 @@ on:
         options:
           - dev
           - prod
+      ARTIFACT_SOURCE_ENVIRONMENT:
+        description: 'Choose the artifact source environment.'
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - qa
+          - prod
 
 env:
   apiops_release_version: v6.0.1.7
-  # NEW: Centralize your artifacts path
-  ARTIFACTS_PATH: api_migration/apimartifacts
+  # Base path for stored publisher artifacts
+  ARTIFACTS_BASE_PATH: api_migration/apimartifacts
   # By default, this will be Information but if you want something different you will need to add a variable in the Settings -> Environment -> Environment variables section
   Logging__LogLevel__Default: ${{ vars.LOG_LEVEL || 'Information' }}
 
@@ -22,6 +31,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
+    env:
+      ARTIFACTS_PATH: ${{ env.ARTIFACTS_BASE_PATH }}/${{ github.event.inputs.ARTIFACT_SOURCE_ENVIRONMENT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,7 +45,7 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
           API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
-          # IMPORTANT: updated to point to your subfolder
+          # IMPORTANT: points to the selected source environment subfolder
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
         run: |
           Set-StrictMode -Version Latest

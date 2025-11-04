@@ -128,7 +128,7 @@ jobs:
       - name: Run publisher (policy fragments only)
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', toUpper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
+          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', upper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
           AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}

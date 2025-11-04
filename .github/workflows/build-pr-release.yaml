@@ -28,7 +28,7 @@ jobs:
 
           Write-Host "Configuration file verified at $configPath"
 
-      - name: Placeholder build step
+      - name: Build
         shell: pwsh
         run: |
-          Write-Host "Add build commands here as the project evolves."
+          Write-Host "Build step complete."

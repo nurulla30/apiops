@@ -1,0 +1,119 @@
+name: Run Publisher - Policy Fragments Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      API_MANAGEMENT_ENVIRONMENT:
+        description: 'Target environment to deploy to.'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      ARTIFACT_SOURCE_ENVIRONMENT:
+        description: 'Source artifact environment (policy fragments).'
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - qa
+          - prod
+
+env:
+  apiops_release_version: v6.0.1.7
+
+jobs:
+  publish-policy-fragments:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
+    env:
+      ARTIFACTS_SOURCE_PATH: api_migration/apimartifacts/${{ github.event.inputs.ARTIFACT_SOURCE_ENVIRONMENT }}
+      STAGING_PATH: ${{ runner.temp }}/policy-fragments-service
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare policy fragment artifacts
+        run: |
+          set -euo pipefail
+
+          SOURCE_PATH="${{ env.ARTIFACTS_SOURCE_PATH }}"
+          STAGING_PATH="${{ env.STAGING_PATH }}"
+
+          rm -rf "${STAGING_PATH}"
+          mkdir -p "${STAGING_PATH}"
+
+          copied=false
+
+          if [ -d "${SOURCE_PATH}/policy fragments" ]; then
+            cp -R "${SOURCE_PATH}/policy fragments" "${STAGING_PATH}/"
+            copied=true
+          fi
+
+          if [ -d "${SOURCE_PATH}/workspaces" ]; then
+            for workspace_dir in "${SOURCE_PATH}/workspaces"/*; do
+              if [ -d "${workspace_dir}" ] && [ -d "${workspace_dir}/policy fragments" ]; then
+                workspace_name="$(basename "${workspace_dir}")"
+                mkdir -p "${STAGING_PATH}/workspaces/${workspace_name}"
+                cp -R "${workspace_dir}/policy fragments" "${STAGING_PATH}/workspaces/${workspace_name}/"
+                copied=true
+              fi
+            done
+          fi
+
+          if [ "${copied}" = "false" ]; then
+            echo "::error::No policy fragment artifacts found in '${SOURCE_PATH}'. Ensure extractor has produced policy fragments for this environment."
+            exit 1
+          fi
+
+      - name: Run publisher (policy fragments only)
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
+          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ env.STAGING_PATH }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+          $VerbosePreference = "Continue"
+          $InformationPreference = "Continue"
+
+          Write-Information "Setting name variables..."
+          $releaseFileName = "publisher-linux-x64.zip"
+          $executableFileName = "publisher"
+
+          if ("${{ runner.os }}" -like "*win*") {
+            $releaseFileName = "publisher-win-x64.zip"
+            $executableFileName = "publisher.exe"
+          }
+          elseif ("${{ runner.os }}" -like "*mac*") {
+            $releaseFileName = "publisher-osx-x64.zip"
+          }
+
+          Write-Information "Downloading release..."
+          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
+          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
+          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
+
+          Write-Information "Extracting release..."
+          $executableFolderPath = Join-Path "${{ runner.temp }}" "publisher-policy-fragments"
+          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
+          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
+
+          Write-Information "Setting file permissions..."
+          if ("${{ runner.os }}" -like "*linux*")
+          {
+            & chmod +x "$executableFilePath"
+            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
+          }
+
+          Write-Information "Running publisher for policy fragments..."
+          & "$executableFilePath"
+          if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
+
+          Write-Information "Execution complete."
+        shell: pwsh

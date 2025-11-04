@@ -30,15 +30,13 @@ on:
 
 env:
   apiops_release_version: v6.0.1.7
-  # Base path for extracted artifacts
-  ARTIFACTS_BASE_PATH: api_migration/apimartifacts
 
 jobs:
   extract:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     env:
-      ARTIFACTS_PATH: ${{ format('{0}/{1}', env.ARTIFACTS_BASE_PATH, github.event.inputs.API_MANAGEMENT_ENVIRONMENT) }}
+      ARTIFACTS_PATH: api_migration/apimartifacts/${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     steps:
       - uses: actions/checkout@v4
           
@@ -162,7 +160,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
-      ARTIFACTS_PATH: ${{ format('{0}/{1}', env.ARTIFACTS_BASE_PATH, github.event.inputs.API_MANAGEMENT_ENVIRONMENT) }}
+      ARTIFACTS_PATH: api_migration/apimartifacts/${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     steps:
       - uses: actions/checkout@v4
           

@@ -42,6 +42,10 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Load environment configuration
+        env:
+          AZURE_CLIENT_SECRET_DEV: ${{ secrets.AZURE_CLIENT_SECRET_DEV }}
+          AZURE_CLIENT_SECRET_QA: ${{ secrets.AZURE_CLIENT_SECRET_QA }}
+          AZURE_CLIENT_SECRET_PROD: ${{ secrets.AZURE_CLIENT_SECRET_PROD }}
         run: |
           set -euo pipefail
           CONFIG_FILE="${GITHUB_WORKSPACE}/config/apim.env"
@@ -66,30 +70,36 @@ jobs:
               export AZURE_SUBSCRIPTION_ID="${DEV_AZURE_SUBSCRIPTION_ID}"
               export AZURE_RESOURCE_GROUP_NAME="${DEV_AZURE_RESOURCE_GROUP_NAME}"
               export API_MANAGEMENT_SERVICE_NAME="${DEV_API_MANAGEMENT_SERVICE_NAME}"
+              export AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET_DEV}"
               echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
               echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}" >> "${GITHUB_ENV}"
               ;;
             qa)
               export AZURE_CLIENT_ID="${QA_AZURE_CLIENT_ID}"
               export AZURE_SUBSCRIPTION_ID="${QA_AZURE_SUBSCRIPTION_ID}"
               export AZURE_RESOURCE_GROUP_NAME="${QA_AZURE_RESOURCE_GROUP_NAME}"
               export API_MANAGEMENT_SERVICE_NAME="${QA_API_MANAGEMENT_SERVICE_NAME}"
+              export AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET_QA}"
               echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
               echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}" >> "${GITHUB_ENV}"
               ;;
             prod)
               export AZURE_CLIENT_ID="${PROD_AZURE_CLIENT_ID}"
               export AZURE_SUBSCRIPTION_ID="${PROD_AZURE_SUBSCRIPTION_ID}"
               export AZURE_RESOURCE_GROUP_NAME="${PROD_AZURE_RESOURCE_GROUP_NAME}"
               export API_MANAGEMENT_SERVICE_NAME="${PROD_API_MANAGEMENT_SERVICE_NAME}"
+              export AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET_PROD}"
               echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
               echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
               echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}" >> "${GITHUB_ENV}"
               ;;
             *)
               echo "::error::Unsupported environment '${ENVIRONMENT}'."
@@ -102,7 +112,7 @@ jobs:
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH == 'Extract All APIs' }}
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', upper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
+          AZURE_CLIENT_SECRET: ${{ env.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
@@ -155,7 +165,7 @@ jobs:
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH != 'Extract All APIs' }}
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', upper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
+          AZURE_CLIENT_SECRET: ${{ env.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}

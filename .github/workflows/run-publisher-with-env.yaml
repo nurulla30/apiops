@@ -36,6 +36,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Ensure artifact source folder exists
+        run: |
+          mkdir -p "${{ env.ARTIFACTS_PATH }}"
+          if [ -z "$(ls -A "${{ env.ARTIFACTS_PATH }}" 2>/dev/null)" ]; then
+            echo "WARNING: Source folder '${{ env.ARTIFACTS_PATH }}' is empty. Ensure extractor has populated this environment."
+          fi
 
       - name: Run publisher
         env:

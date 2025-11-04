@@ -1,0 +1,34 @@
+name: Build - PR & Release
+
+on:
+  pull_request:
+  release:
+    types:
+      - published
+      - prereleased
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify configuration files
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+
+          $configPath = Join-Path $env:GITHUB_WORKSPACE 'config/apim.env'
+
+          if (-not (Test-Path $configPath)) {
+            throw "Required configuration file not found at $configPath"
+          }
+
+          Write-Host "Configuration file verified at $configPath"
+
+      - name: Placeholder build step
+        shell: pwsh
+        run: |
+          Write-Host "Add build commands here as the project evolves."

@@ -1,11 +1,11 @@
 {
   "properties": {
-    "path": "",
+    "path": "clone",
     "apiRevision": "1",
     "authenticationSettings": {},
     "description": "dfbvergcdssdwsdcdsddcsw",
     "isCurrent": true,
-    "displayName": "Test Product",
+    "displayName": "Test Product (clone)",
     "protocols": [
       "https"
     ],

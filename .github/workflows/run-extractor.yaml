@@ -17,6 +17,7 @@ on:
         default: dev
         options:
         - dev
+        - qa
         - prod
       API_SPECIFICATION_FORMAT:
         description: 'API Specification Format'     
@@ -39,16 +40,73 @@ jobs:
       ARTIFACTS_PATH: api_migration/apimartifacts/${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Load environment configuration
+        run: |
+          set -euo pipefail
+          CONFIG_FILE="${GITHUB_WORKSPACE}/config/apim.env"
+          if [ ! -f "${CONFIG_FILE}" ]; then
+            echo "::error::Configuration file '${CONFIG_FILE}' not found."
+            exit 1
+          fi
+          while IFS='=' read -r key value; do
+            if [ -z "${key}" ] || [[ "${key}" =~ ^# ]]; then
+              continue
+            fi
+            key="$(echo "${key}" | xargs)"
+            value="$(echo "${value}" | xargs)"
+            export "${key}=${value}"
+            echo "${key}=${value}" >> "${GITHUB_ENV}"
+          done < "${CONFIG_FILE}"
+
+          ENVIRONMENT="${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}"
+          case "${ENVIRONMENT}" in
+            dev)
+              export AZURE_CLIENT_ID="${DEV_AZURE_CLIENT_ID}"
+              export AZURE_SUBSCRIPTION_ID="${DEV_AZURE_SUBSCRIPTION_ID}"
+              export AZURE_RESOURCE_GROUP_NAME="${DEV_AZURE_RESOURCE_GROUP_NAME}"
+              export API_MANAGEMENT_SERVICE_NAME="${DEV_API_MANAGEMENT_SERVICE_NAME}"
+              echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
+              echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              ;;
+            qa)
+              export AZURE_CLIENT_ID="${QA_AZURE_CLIENT_ID}"
+              export AZURE_SUBSCRIPTION_ID="${QA_AZURE_SUBSCRIPTION_ID}"
+              export AZURE_RESOURCE_GROUP_NAME="${QA_AZURE_RESOURCE_GROUP_NAME}"
+              export API_MANAGEMENT_SERVICE_NAME="${QA_API_MANAGEMENT_SERVICE_NAME}"
+              echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
+              echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              ;;
+            prod)
+              export AZURE_CLIENT_ID="${PROD_AZURE_CLIENT_ID}"
+              export AZURE_SUBSCRIPTION_ID="${PROD_AZURE_SUBSCRIPTION_ID}"
+              export AZURE_RESOURCE_GROUP_NAME="${PROD_AZURE_RESOURCE_GROUP_NAME}"
+              export API_MANAGEMENT_SERVICE_NAME="${PROD_API_MANAGEMENT_SERVICE_NAME}"
+              echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}" >> "${GITHUB_ENV}"
+              echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}" >> "${GITHUB_ENV}"
+              echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}" >> "${GITHUB_ENV}"
+              ;;
+            *)
+              echo "::error::Unsupported environment '${ENVIRONMENT}'."
+              exit 1
+              ;;
+          esac
+        shell: bash
           
       - name: Run extractor without Config Yaml
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH == 'Extract All APIs' }}
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', toUpper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          API_MANAGEMENT_SERVICE_NAME: ${{ env.API_MANAGEMENT_SERVICE_NAME }}
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
         run: |
@@ -96,12 +154,12 @@ jobs:
       - name: Run extractor with Config Yaml
         if: ${{ github.event.inputs.CONFIGURATION_YAML_PATH != 'Extract All APIs' }}
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-          API_MANAGEMENT_SERVICE_NAME: ${{ secrets.API_MANAGEMENT_SERVICE_NAME }}
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', toUpper(github.event.inputs.API_MANAGEMENT_ENVIRONMENT))] }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          API_MANAGEMENT_SERVICE_NAME: ${{ env.API_MANAGEMENT_SERVICE_NAME }}
           API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ github.workspace }}/${{ env.ARTIFACTS_PATH }}
           API_SPECIFICATION_FORMAT: ${{ github.event.inputs.API_SPECIFICATION_FORMAT }} 
           CONFIGURATION_YAML_PATH:  ${{ github.workspace }}/${{ github.event.inputs.CONFIGURATION_YAML_PATH }}

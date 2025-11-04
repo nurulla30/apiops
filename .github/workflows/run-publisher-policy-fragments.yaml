@@ -29,7 +29,7 @@ jobs:
     environment: ${{ github.event.inputs.API_MANAGEMENT_ENVIRONMENT }}
     env:
       ARTIFACTS_SOURCE_PATH: api_migration/apimartifacts/${{ github.event.inputs.ARTIFACT_SOURCE_ENVIRONMENT }}
-      STAGING_PATH: ${{ runner.temp }}/policy-fragments-service
+      STAGING_PATH: ${{ github.workspace }}/policy-fragments-service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -1,0 +1,134 @@
+name: APIM Policy Testing: PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  apiops_release_version: v6.0.1.7
+
+jobs:
+  validate-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      ARTIFACTS_PATH: api_migration/apimartifacts/dev
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v3
+        with:
+          version: 2.59.0
+        env:
+          JF_URL: ${{ secrets.JFROG_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+
+      - name: Configure JFrog CLI
+        run: |
+          jf config add default --artifactory-url="${{ secrets.JFROG_URL }}" --access-token="${{ secrets.JFROG_ACCESS_TOKEN }}" --overwrite
+        shell: bash
+
+      - name: Load environment configuration
+        env:
+          AZURE_CLIENT_SECRET_DEV: ${{ secrets.AZURE_CLIENT_SECRET_DEV }}
+        run: |
+          set -euo pipefail
+
+          CONFIG_FILE="${GITHUB_WORKSPACE}/config/apim.env"
+          if [ ! -f "${CONFIG_FILE}" ]; then
+            echo "::error::Configuration file '${CONFIG_FILE}' not found."
+            exit 1
+          fi
+
+          while IFS='=' read -r rawKey rawValue; do
+            if [ -z "${rawKey}" ] || [[ "${rawKey}" =~ ^# ]]; then
+              continue
+            fi
+            key="$(echo "${rawKey}" | xargs)"
+            value="$(echo "${rawValue}" | xargs)"
+            export "${key}=${value}"
+          done < "${CONFIG_FILE}"
+
+          export COMMIT_ID="${GITHUB_SHA}"
+          echo "COMMIT_ID=${COMMIT_ID}" >> "${GITHUB_ENV}"
+
+          export AZURE_CLIENT_ID="${DEV_AZURE_CLIENT_ID}"
+          export AZURE_SUBSCRIPTION_ID="${DEV_AZURE_SUBSCRIPTION_ID}"
+          export AZURE_RESOURCE_GROUP_NAME="${DEV_AZURE_RESOURCE_GROUP_NAME}"
+          export API_MANAGEMENT_SERVICE_NAME="${DEV_API_MANAGEMENT_SERVICE_NAME}"
+          export AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET_DEV}"
+          export API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH="${GITHUB_WORKSPACE}/${{ env.ARTIFACTS_PATH }}"
+
+          {
+            echo "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}"
+            echo "AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}"
+            echo "AZURE_RESOURCE_GROUP_NAME=${AZURE_RESOURCE_GROUP_NAME}"
+            echo "API_MANAGEMENT_SERVICE_NAME=${API_MANAGEMENT_SERVICE_NAME}"
+            echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}"
+            echo "AZURE_TENANT_ID=${AZURE_TENANT_ID}"
+            echo "API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH=${API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH}"
+          } >> "${GITHUB_ENV}"
+        shell: bash
+
+      - name: Ensure artifact source folder exists
+        run: |
+          mkdir -p "${{ env.ARTIFACTS_PATH }}"
+          if [ -z "$(ls -A "${{ env.ARTIFACTS_PATH }}" 2>/dev/null)" ]; then
+            echo "::warning::Source folder '${{ env.ARTIFACTS_PATH }}' is empty. Ensure extractor has populated this environment."
+          fi
+
+      - name: Run publisher against dev
+        env:
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ env.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          API_MANAGEMENT_SERVICE_NAME: ${{ env.API_MANAGEMENT_SERVICE_NAME }}
+          API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH: ${{ env.API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+          $VerbosePreference = "Continue"
+          $InformationPreference = "Continue"
+
+          Write-Information "Setting name variables..."
+          $releaseFileName = "publisher-linux-x64.zip"
+          $executableFileName = "publisher"
+
+          if ("${{ runner.os }}" -like "*win*") {
+            $releaseFileName = "publisher-win-x64.zip"
+            $executableFileName = "publisher.exe"
+          }
+          elseif ("${{ runner.os }}" -like "*mac*") {
+            $releaseFileName = "publisher-osx-x64.zip"
+          }
+
+          Write-Information "Downloading release..."
+          $uri = "https://github.com/Azure/apiops/releases/download/${{ env.apiops_release_version }}/$releaseFileName"
+          $downloadFilePath = Join-Path "${{ runner.temp }}" $releaseFileName
+          Invoke-WebRequest -Uri "$uri" -OutFile "$downloadFilePath"
+
+          Write-Information "Extracting release..."
+          $executableFolderPath = Join-Path "${{ runner.temp }}" "publisher"
+          Expand-Archive -Path "$downloadFilePath" -DestinationPath "$executableFolderPath"
+          $executableFilePath = Join-Path "$executableFolderPath" $executableFileName
+
+          Write-Information "Setting file permissions..."
+          if ("${{ runner.os }}" -like "*linux*")
+          {
+            & chmod +x "$executableFilePath"
+            if ($LASTEXITCODE -ne 0) { throw "Setting file permissions failed."}
+          }
+
+          Write-Information "Running publisher..."
+          & "$executableFilePath"
+          if ($LASTEXITCODE -ne 0) { throw "Running publisher failed."}
+
+          Write-Information "Execution complete."
+        shell: pwsh

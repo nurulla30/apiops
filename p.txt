@@ -1,13 +1,1 @@
 
-
-Hope you’re doing well. I’m reaching out regarding the recent update — Upcoming Changes to Sectigo Client Authentication – What To Know
- — and wanted to confirm our next steps for certificate rotation.
-
-We currently use Sectigo-issued certificates to enable mTLS between the Akamai Edge and our Azure origin servers:
-
-
-Each year, the Akamai team sends us a CSR, and we return a signed certificate (including the full chain — leaf, intermediate, and root).
-
- could you please confirm whether our current mTLS setup will be impacted? If so, we’d appreciate your guidance on:
-
-Whether we should transition to MSPKI-issued certificates for the Akamai mTLS connection.

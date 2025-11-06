@@ -1,3 +1,1 @@
-Quick question — for our external-facing TLS certificates (standard HTTPS, not client-auth or mTLS), can we use CLM to request and manage Sectigo certificates, or are we still expected to obtain them directly from Sectigo?
 
-Just trying to confirm whether CLM fully supports external Sectigo certs or if it’s limited to internal PKIRA/MSPKI use.

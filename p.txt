@@ -1,3 +1,14 @@
 
 az rest --method post \
   --url "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.ApiManagement/service/<APIM_NAME>/namedValues/<NAMED_VALUE_ID>/refreshSecret?api-version=2024-05-01"
+
+
+
+
+We recently received an internal update regarding Sectigo certificate changes, where client authentication support will be retired after 
+
+As you know, our current mTLS setup between Akamai Edge and Azure origin (e.g.,  and ) uses Sectigo-issued certificates.
+Each year, your team sends us a CSR, and we sign it through Sectigo and return the complete certificate chain (leaf, intermediate, root) for installation on your side.
+
+With this upcoming change, we’ll need to transition to MSPKI-issued certificates for mTLS. The MSPKI Root CA will replace the current Sectigo root, so we’ll need to ensure it’s trusted on your side prior to the next renewal.
+

@@ -4,3 +4,5 @@ az rest --method post \
 
 
 
+
+They advised us to work with Akamai to ensure that the trust configuration is updated to support the MSPKI Root CA, which will replace the current Sectigo root used in our mTLS setup between Akamai Edge and our Azure origin ().

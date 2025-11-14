@@ -20,7 +20,7 @@ resourceGroup="YourResourceGroupName"
 serviceName="YourAPIMServiceName"
 apiName=""  # The unique identifier of your API
 filePath="actor-api.xml"
-
+FilePath="../actor-api.xml"
 API_VERSION="2023-05-01" # Use a stable API version, check docs if this one fails
 
 # 2. Construct the URL for the API-scope policy resource

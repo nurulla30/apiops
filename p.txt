@@ -40,3 +40,21 @@ az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FileP
 echo "Policy for API '$apiName' saved successfully to: $FilePath"
 
 FilePath="${apiName}.xml" # This sets the filename, e.g., "Actuator-API.xml"
+
+
+
+
+
+
+
+# 2. Read the XML file content and format it into a JSON payload
+# This handles newline removal and escaping required for the JSON body.
+policy_content=$(cat "$filePath" | tr -d '\n' | sed 's/"/\\"/g')
+json_body="{\"properties\":{\"format\":\"rawxml\",\"value\":\"$policy_content\"}}"
+
+# 3. Execute the PUT request to update the policy
+echo "Uploading policy for API '$apiName'..."
+
+az rest --method PUT --url "$APIM_URL" --body "$json_body" --output none
+
+echo "Policy update complete for API: $apiName"

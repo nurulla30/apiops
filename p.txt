@@ -27,3 +27,7 @@ APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers
 
 # 3. Execute the REST GET request
 az rest --method get --url $APIM_URL --query properties.value -o tsv
+
+az rest --method get --url $APIM_URL --query properties.value -o tsv > $filePath
+
+echo "Policy saved to: $filePath"

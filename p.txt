@@ -5,3 +5,10 @@ az rest --method post \
 
 
 
+
+
+az apim api policy show \
+  --resource-group <your-resource-group> \
+  --service-name <your-apim-name> \
+  --api-id <api-name-or-id> \
+  --output xml

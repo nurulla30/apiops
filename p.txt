@@ -31,3 +31,9 @@ az rest --method get --url $APIM_URL --query properties.value -o tsv
 az rest --method get --url $APIM_URL --query properties.value -o tsv > $filePath
 
 echo "Policy saved to: $filePath"
+
+FilePath="${apiName}.xml" # This sets the filename, e.g., "Actuator-API.xml"
+
+az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
+
+echo "Policy for API '$apiName' saved successfully to: $FilePath"

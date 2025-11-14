@@ -12,3 +12,18 @@ az apim api policy show \
   --service-name <your-apim-name> \
   --api-id <api-name-or-id> \
   --output xml
+
+
+# 1. Define your variables
+subscriptionId="YOUR_SUBSCRIPTION_ID"
+resourceGroup="YourResourceGroupName"
+serviceName="YourAPIMServiceName"
+apiName=""  # The unique identifier of your API
+
+API_VERSION="2023-05-01" # Use a stable API version, check docs if this one fails
+
+# 2. Construct the URL for the API-scope policy resource
+APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/policies/policy?api-version=$API_VERSION"
+
+# 3. Execute the REST GET request
+az rest --method get --url $APIM_URL --query properties.value -o tsv

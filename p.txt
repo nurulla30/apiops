@@ -5,54 +5,16 @@ az rest --method post \
 
 
 
-
-
-az apim api policy show \
-  --resource-group <your-resource-group> \
-  --service-name <your-apim-name> \
-  --api-id <api-name-or-id> \
-  --output xml
-
-
-# 1. Define your variables
-subscriptionId="YOUR_SUBSCRIPTION_ID"
-resourceGroup="YourResourceGroupName"
-serviceName="YourAPIMServiceName"
-apiName=""  # The unique identifier of your API
-filePath="actor-api.xml"
-FilePath="../actor-api.xml"
-API_VERSION="2023-05-01" # Use a stable API version, check docs if this one fails
-
-# 2. Construct the URL for the API-scope policy resource
 APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/policies/policy?api-version=$API_VERSION"
 
-# 3. Execute the REST GET request
-az rest --method get --url $APIM_URL --query properties.value -o tsv
+# --- 3. Prepare the JSON Payload ---
+# Read the XML, remove newlines (tr -d '\n'), and escape internal quotes (sed 's/"/\\"/g')
+policy_content=$(cat "$FilePath" | tr -d '\n' | sed 's/"/\\"/g')
 
-az rest --method get --url $APIM_URL --query properties.value -o tsv > $filePath
-
-echo "Policy saved to: $filePath"
-
-FilePath="${apiName}.xml" # This sets the filename, e.g., "Actuator-API.xml"
-
-az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
-
-echo "Policy for API '$apiName' saved successfully to: $FilePath"
-
-FilePath="${apiName}.xml" # This sets the filename, e.g., "Actuator-API.xml"
-
-
-
-
-
-
-
-# 2. Read the XML file content and format it into a JSON payload
-# This handles newline removal and escaping required for the JSON body.
-policy_content=$(cat "$filePath" | tr -d '\n' | sed 's/"/\\"/g')
+# Construct the required JSON body for the PUT operation
 json_body="{\"properties\":{\"format\":\"rawxml\",\"value\":\"$policy_content\"}}"
 
-# 3. Execute the PUT request to update the policy
+# --- 4. Execute the PUT request ---
 echo "Uploading policy for API '$apiName'..."
 
 az rest --method PUT --url "$APIM_URL" --body "$json_body" --output none

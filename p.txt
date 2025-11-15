@@ -4,17 +4,10 @@ az rest --method post \
 
 
 
-revisionId="YourRevisionNumber"
-# URL targets the policy within the specific API revision resource
+revisionId="r6" 
+
+# Then run the command again with this revised variable
+# Make sure to use quotes for the URL!
 APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/revisions/$revisionId/policies/policy?api-version=$API_VERSION"
 
 az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
-
-echo "Policy for API '$apiName' revision '$revisionId' saved to: $FilePath"
-
-
-
-LIST_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/revisions?api-version=$API_VERSION"
-
-# 2. Execute the GET request to list them
-az rest --method get --url "$LIST_URL" --query "value[*].name" -o tsv

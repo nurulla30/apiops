@@ -11,3 +11,10 @@ APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers
 az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
 
 echo "Policy for API '$apiName' revision '$revisionId' saved to: $FilePath"
+
+
+
+LIST_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/revisions?api-version=$API_VERSION"
+
+# 2. Execute the GET request to list them
+az rest --method get --url "$LIST_URL" --query "value[*].name" -o tsv

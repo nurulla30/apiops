@@ -4,19 +4,10 @@ az rest --method post \
 
 
 
+revisionId="YourRevisionNumber"
+# URL targets the policy within the specific API revision resource
+APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/revisions/$revisionId/policies/policy?api-version=$API_VERSION"
 
-APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/policies/policy?api-version=$API_VERSION"
+az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
 
-# --- 3. Prepare the JSON Payload ---
-# Read the XML, remove newlines (tr -d '\n'), and escape internal quotes (sed 's/"/\\"/g')
-policy_content=$(cat "$FilePath" | tr -d '\n' | sed 's/"/\\"/g')
-
-# Construct the required JSON body for the PUT operation
-json_body="{\"properties\":{\"format\":\"rawxml\",\"value\":\"$policy_content\"}}"
-
-# --- 4. Execute the PUT request ---
-echo "Uploading policy for API '$apiName'..."
-
-az rest --method PUT --url "$APIM_URL" --body "$json_body" --output none
-
-echo "Policy update complete for API: $apiName"
+echo "Policy for API '$apiName' revision '$revisionId' saved to: $FilePath"

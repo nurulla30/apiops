@@ -16,3 +16,11 @@ ApiManagementGatewayLlmLog
 | where TimeGenerated > ago(1h)
 | project TimeGenerated, CorrelationId, RequestMessages, ResponseMessages
 | order by TimeGenerated desc
+
+
+az monitor diagnostic-settings create \
+  --name "apim-llm-diagnostic" \
+  --resource "/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.ApiManagement/service/{apim-name}" \
+  --workspace "/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{workspace-name}" \
+  --export-to-resource-specific true \
+  --logs '[{"category": "GatewayManagedGenerativeAi", "enabled": true}]'

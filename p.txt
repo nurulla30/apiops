@@ -37,3 +37,10 @@ az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FileP
         <include-fragment fragment-id="eventhub-log-body" />
     </when>
 </choose>
+
+SELECT
+    *
+INTO
+    [YourOutputAlias]
+FROM
+    [YourEventHubName]

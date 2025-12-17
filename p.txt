@@ -11,3 +11,22 @@ revisionId="r6"
 APIM_URL="/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.ApiManagement/service/$serviceName/apis/$apiName/revisions/$revisionId/policies/policy?api-version=$API_VERSION"
 
 az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FilePath"
+
+
+<set-variable name="-eventhub" value="true" />
+
+<choose>
+    <when condition="@(context.Variables.GetValueOrDefault<string>("enable-eventhub") == "true")">
+        <log-to-eventhub logger-id="APIM-HubLogger">
+            @{
+                return new JObject(
+                    new JProperty("LogDateTime", DateTime.UtcNow),
+                    new JProperty("EndPointUri", context.Deployment.ServiceName + "/" + context.Api.Name + "/" + context.Operation.Name),
+                    new JProperty("CorrelationId", context.RequestId),
+                    new JProperty("RequestIp", context.Request.IpAddress),
+                    new JProperty("Body", context.Request.Body.As<string>(preserveContent: true))
+                ).ToString();
+            }
+        </log-to-eventhub>
+    </when>
+</choose>

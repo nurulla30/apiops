@@ -41,6 +41,6 @@ az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FileP
 SELECT
     *
 INTO
-    [YourOutputAlias]
+    [outputalias]
 FROM
-    [YourEventHubName]
+    [apim-test-dev1]

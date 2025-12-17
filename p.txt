@@ -30,3 +30,10 @@ az rest --method get --url "$APIM_URL" --query properties.value -o tsv > "$FileP
         </log-to-eventhub>
     </when>
 </choose>
+
+<set-variable name="enable-eventhub" value="true" />
+<choose>
+    <when condition="@(context.Variables.GetValueOrDefault<string>("enable-eventhub") == "true")">
+        <include-fragment fragment-id="eventhub-log-body" />
+    </when>
+</choose>

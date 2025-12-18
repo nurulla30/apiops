@@ -36,3 +36,8 @@ ApiManagementGatewayLlmLog
 
 
 
+ApiManagementGatewayLlmLog
+| where TimeGenerated > ago(1h)
+| order by CorrelationId asc, SequenceNumber asc
+| summarize RawFullRequest = make_string(RequestMessages) by CorrelationId, TimeGenerated
+| project TimeGenerated, CorrelationId, RawFullRequest

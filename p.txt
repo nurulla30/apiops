@@ -41,3 +41,12 @@ ApiManagementGatewayLlmLog
 | order by CorrelationId asc, SequenceNumber asc
 | summarize RawFullRequest = make_string(RequestMessages) by CorrelationId, TimeGenerated
 | project TimeGenerated, CorrelationId, RawFullRequest
+
+
+ApiManagementGatewayLlmLog
+| where TimeGenerated > ago(1h)
+// Ensure chunks are in order before merging
+| order by CorrelationId asc, SequenceNumber asc
+| summarize FullRawRequest = strcat_array(make_list(RequestMessages), "") 
+  by CorrelationId, TimeGenerated
+| project TimeGenerated, CorrelationId, FullRawRequest

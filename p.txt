@@ -27,3 +27,18 @@ az monitor diagnostic-settings create \
 
 
 --metrics '[{"category": "AllMetrics", "enabled": true}]'
+
+
+We have received an incident regarding Websocket. Based on our review of the metrics and standard operating procedures, we have identified a specific failure mode.
+
+Investigation Findings:
+Handshake Status: APIM logs show successful 101 Switching Protocols and 309 successful client requests, confirming the initial handshake is established.
+
+Connection Duration: However, our dashboards show a Median Connection Duration of only 20ms to 140ms. Per our documentation, a healthy connection should stay open for at least 5 minutes.
+
+Error Logs: We are seeing immediate disconnections following the handshake, with logs reporting upstream_reset_after_response_started and downstream_remote_disconnect.
+
+Message Flow: While there is outgoing traffic, Incoming Messages show "No data," indicating the bidirectional stream is not being maintained.
+
+Requested Action:
+Can you please confirm the health of the backend/producer for API 349? Our documentation classifies this "connect-and-drop" behavior as a Producer Issue.

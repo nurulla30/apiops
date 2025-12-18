@@ -29,4 +29,10 @@ az monitor diagnostic-settings create \
 --metrics '[{"category": "AllMetrics", "enabled": true}]'
 
 
+ApiManagementGatewayLlmLog
+| where TimeGenerated > ago(1h)
+| project TimeGenerated, CorrelationId, SequenceNumber, RequestMessages, ResponseMessages
+| order by CorrelationId asc, SequenceNumber asc
+
+
 

@@ -53,10 +53,6 @@ ApiManagementGatewayLlmLog
 
 
 
-Standard gateway logging is optimized for high-speed metadata (status codes, headers, and IP addresses), but it is not designed to handle the complex, multi-kilobyte JSON structures typical of generative AI.
-
-To effectively troubleshoot client issues where payloads are being altered or rejected, we utilize dedicated LLM Gateway Logs (GatewayManagedGenerativeAi) as a temporary diagnostic measure.
-
 
 
 Feature,Standard Gateway Logs,LLM Gateway Logs

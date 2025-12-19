@@ -1,1 +1,13 @@
+Step 1: The Infrastructure (Diagnostic Setting)
+Role: This acts as the "pipe" that connects your APIM service to your Log Analytics Workspace.
 
+Action: You go to the APIM instance level and enable the specific category called "Logs related to generative AI gateway".
+
+Importance: Without this step, APIM has no destination to send the AI data, regardless of your API-level settings.
+
+Step 2: The Data Trigger (API-Level Monitoring)
+Role: This acts as the "sensor" that tells APIM which specific data to capture from the traffic.
+
+Action: Inside the specific API settings, you must check the box for "Log LLM messages" under the Azure Monitor tab.
+
+Importance: This is what enables the 256 KB high-capacity pipeline and the automatic chunking feature. If you only do Step 1, you might see basic metadata but you will not see the full reassembled JSON body that Nick and Mike need.

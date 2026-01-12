@@ -1,5 +1,4 @@
-AzureDiagnostics
-| where TimeGenerated > ago(24h)
-| where Category == "NetworkSecurityGroupFlowEvent"
-| take 5
-| project TimeGenerated, Category, Resource, properties_s
+AGWAccessLogs
+| where ipv4_is_in_range(ClientIP, "") // Replace with Akamai CIDR
+| project TimeGenerated, ClientIP, RequestUri, HttpStatusCode, Host, UserAgent
+| order by TimeGenerated desc

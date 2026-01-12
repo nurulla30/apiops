@@ -2,3 +2,10 @@ AGWAccessLogs
 | where ipv4_is_in_range(ClientIP, "") // Replace with Akamai CIDR
 | project TimeGenerated, ClientIP, RequestUri, HttpStatusCode, Host, UserAgent
 | order by TimeGenerated desc
+
+
+NTANetAnalytics
+| where FlowType == "ExternalPublic"
+| where FlowStatus == "D" // "D" stands for Denied/Rejected
+| project TimeGenerated, SrcIp, DestIp, DestPort, NSGRule, FlowStatus
+| order by TimeGenerated desc

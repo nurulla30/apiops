@@ -1,1 +1,7 @@
-
+AzureDiagnostics
+| where TimeGenerated > ago(24h)
+| where Category has "NetworkSecurityGroupFlowEvent"
+| where msg_s has "D"   // Denied (sometimes D/A is inside the message)
+| where msg_s has "443" // quick filter
+| summarize DenyCount=count() by bin(TimeGenerated, 1h)
+| order by TimeGenerated desc

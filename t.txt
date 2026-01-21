@@ -21,3 +21,7 @@ AzureDiagnostics
 TOKEN=$(az account get-access-token \
   --resource https://management.azure.com \
   --query accessToken -o tsv)
+
+
+curl -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \

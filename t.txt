@@ -15,3 +15,9 @@ AzureDiagnostics
 | where Action_s == "Deny"
 | project TimeGenerated, SourceIP_s, DestIP_s, DestPort_d, Access_s, RuleName_s
 | order by TimeGenerated desc
+
+
+
+TOKEN=$(az account get-access-token \
+  --resource https://management.azure.com \
+  --query accessToken -o tsv)

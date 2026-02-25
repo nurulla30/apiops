@@ -1,2 +1,8 @@
 az rest --method get \
   --url "https://management.azure.com/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.ApiManagement/service/<apim-name>/certificates?api-version=2023-03-01-preview"
+
+
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/<sub-id>/resourceGroups//providers/Microsoft.ApiManagement/service/?api-version=2024-05-01" \
+  --query "properties.certificates[].{Subject:certificate.subject,Thumbprint:certificate.thumbprint,Expiry:certificate.expiry}"
+  -o table

@@ -1,7 +1,2 @@
-export AZURE_SUBSCRIPTION_ID="your-sub-id"
-export AZURE_RESOURCE_GROUP_NAME="your-resource-group"
-export API_MANAGEMENT_SERVICE_NAME="your-apim-name"
-export API_MANAGEMENT_SERVICE_OUTPUT_FOLDER_PATH="./artifacts"
-export CONFIGURATION_YAML_PATH="./configuration.extractor.yaml"
-
-./extractor
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.ApiManagement/service/<apim-name>/certificates?api-version=2023-03-01-preview"
